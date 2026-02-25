@@ -233,25 +233,13 @@ func NewAddCommand() *cobra.Command {
 				ti:      newTextInput(""),
 				inputs:  make(map[string]string),
 			}
-
-			origLen := len(cfg.ModelList)
-
 			p := tea.NewProgram(m, tea.WithAltScreen())
 			if _, err := p.Run(); err != nil {
 				fmt.Println("tui error:", err)
 				return
 			}
-
-			// Reload config to detect whether TUI saved a new model
-			cfg2, err := internal.LoadConfig()
-			if err != nil {
-				fmt.Println("failed to reload config:", err)
-				return
-			}
-			if len(cfg2.ModelList) > origLen {
-				fmt.Println("model added")
-			}
 		},
 	}
 	return cmd
 }
+

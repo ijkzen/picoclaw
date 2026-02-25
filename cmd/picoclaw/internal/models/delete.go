@@ -158,12 +158,8 @@ func NewDeleteCommand() *cobra.Command {
 				fmt.Println("tui error:", err)
 				return
 			}
-			if m.err != nil {
-				fmt.Println("failed to save config:", m.err)
-				return
-			}
-			fmt.Println("operation completed")
-		},
+	},
 	}
 	return cmd
 }
+
