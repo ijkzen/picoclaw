@@ -142,11 +142,19 @@ func (m editModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// if focus is last field, move to confirm
 				if m.focusIndex == len(m.inputs)-1 {
 					// collect values
-					if _, ok := m.inputs["model"]; ok {
-						m.mc.Model = m.inputs["model"].Value()
-					}
 					if _, ok := m.inputs["alias"]; ok {
 						m.mc.ModelName = m.inputs["alias"].Value()
+
+						if strings.Contains(m.orig.Model, "/") {
+							parts := strings.SplitN(m.orig.Model, "/", 2)
+							vendor := parts[0]
+							// preserve vendor prefix and use new ModelName as suffix
+							m.mc.Model = vendor + "/" + m.mc.ModelName
+						}
+					}
+
+					if _, ok := m.inputs["model"]; ok {
+						m.mc.Model = m.inputs["model"].Value()
 					}
 					if _, ok := m.inputs["api_base"]; ok {
 						m.mc.APIBase = m.inputs["api_base"].Value()
@@ -182,21 +190,14 @@ func (m editModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case 2: // confirm
 			switch msg.String() {
-			case "y", "Y":
+			case "y", "Y", "enter":
 				// save: validate and test
 				// if the user changed the friendly name, sync it to the model field
-				if m.mc.ModelName != m.orig.ModelName {
-					m.mc.Model = m.mc.ModelName
-				}
 				if err := m.mc.Validate(); err != nil {
 					m.errMsg = fmt.Sprintf("invalid config: %v", err)
 					return m, nil
 				}
-				m.errMsg = "testing connectivity..."
-				if !testModelReachable(m.mc) {
-					m.errMsg = "model test failed — not saving"
-					return m, nil
-				}
+
 				m.cfg.ModelList[m.index] = m.mc
 				if err := config.SaveConfig(internal.GetConfigPath(), m.cfg); err != nil {
 					m.errMsg = fmt.Sprintf("failed to save: %v", err)
@@ -242,9 +243,16 @@ func (m editModelTUI) View() string {
 		if _, ok := m.inputs["api_key"]; ok {
 			order = append(order, "api_key")
 		}
+		// render inputs with labels
+		labelMap := map[string]string{
+			"model":    "Model",
+			"alias":    "Alias",
+			"api_base": "API Base",
+			"api_key":  "API Key",
+		}
 		for _, k := range order {
-			b.WriteString(m.inputs[k].View())
-			b.WriteString("\n")
+			label := labelMap[k]
+			b.WriteString(fmt.Sprintf("%s: %s\n", label, m.inputs[k].View()))
 		}
 		b.WriteString("\nPress Enter on last field to continue to confirmation. Esc to cancel.\n")
 	case 2:

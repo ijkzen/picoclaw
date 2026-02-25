@@ -31,14 +31,13 @@ var supportedVendors = []string{
 	"volcengine",
 	"shengsuanyun",
 	"antigravity",
-	"custom",
 }
 
 type addModelTUI struct {
 	cfg     *config.Config
 	vendors []string
 	cursor  int
-	step    string // vendor, customVendor, model, alias, apiKey, apiBase, confirm
+	step    string // vendor, model, alias, apiKey, apiBase, confirm
 	ti      textinput.Model
 	inputs  map[string]string
 	err     error
@@ -82,41 +81,19 @@ func (m addModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter":
 				sel := m.vendors[m.cursor]
 				m.inputs["vendor"] = sel
-				if sel == "custom" {
-					m.step = "customVendor"
-					m.ti = newTextInput("custom vendor name")
-					m.ti.Focus()
-				} else {
-					m.step = "model"
-					m.ti = newTextInput("model (e.g. openai/gpt-5.2)")
-					m.ti.Focus()
-				}
+				m.step = "model"
+				m.ti = newTextInput("model (e.g. openai/gpt-5.2)")
+				m.ti.Focus()
 			case "q", "esc":
 				return m, tea.Quit
 			}
-		case "customVendor", "model", "alias", "apiKey", "apiBase":
+		case "model", "alias", "apiKey", "apiBase":
 			// let textinput handle keys
 			var cmd tea.Cmd
 			m.ti, cmd = m.ti.Update(msg)
 			if msg.String() == "enter" {
 				val := strings.TrimSpace(m.ti.Value())
 				switch m.step {
-				case "customVendor":
-					if val == "" {
-						m.err = fmt.Errorf("vendor name required")
-						return m, tea.Quit
-					}
-					// ensure not colliding
-					for _, v := range supportedVendors {
-						if strings.EqualFold(v, val) {
-							m.err = fmt.Errorf("custom vendor must not match a built-in vendor")
-							return m, tea.Quit
-						}
-					}
-					m.inputs["vendor_custom"] = val
-					m.step = "model"
-					m.ti = newTextInput("model (e.g. custom/my-model)")
-					m.ti.Focus()
 				case "model":
 					if val == "" {
 						m.err = fmt.Errorf("model required")
@@ -135,11 +112,11 @@ func (m addModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.ti.Focus()
 				case "apiKey":
 					m.inputs["api_key"] = val
-					// show apiBase only for custom vendors
+					// Show API Base prompt for OpenAI (optional), otherwise confirm
 					vendor := m.inputs["vendor"]
-					if vendor == "custom" {
+					if vendor == "openai" {
 						m.step = "apiBase"
-						m.ti = newTextInput("API Base (e.g. https://api.example.com)")
+						m.ti = newTextInput("API Base (optional, leave empty for default)")
 						m.ti.Focus()
 					} else {
 						m.step = "confirm"
@@ -157,11 +134,6 @@ func (m addModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Ensure model includes vendor prefix when appropriate
 				modelVal := m.inputs["model"]
 				vendor := m.inputs["vendor"]
-				if vendor == "custom" {
-					if cv, ok := m.inputs["vendor_custom"]; ok && cv != "" {
-						vendor = cv
-					}
-				}
 				if !strings.Contains(modelVal, "/") && vendor != "" {
 					modelVal = vendor + "/" + modelVal
 				}
@@ -190,11 +162,7 @@ func (m addModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.err = err
 					return m, tea.Quit
 				}
-				// test connectivity
-				if !testModelReachable(mc) {
-					m.err = fmt.Errorf("model test failed — not saving configuration")
-					return m, tea.Quit
-				}
+
 				// save
 				cfg, err := internal.LoadConfig()
 				if err != nil {
@@ -227,15 +195,12 @@ func (m addModelTUI) View() string {
 			}
 			s += fmt.Sprintf("%s %s\n", cursor, v)
 		}
-	case "customVendor", "model", "alias", "apiKey", "apiBase":
+	case "model", "alias", "apiKey", "apiBase":
 		s += fmt.Sprintf("%s\n\n%s", m.ti.Placeholder, m.ti.View())
 		s += "\n\nPress Esc to cancel"
 	case "confirm":
 		s += "Confirm add model:\n\n"
 		vendor := m.inputs["vendor"]
-		if vendor == "custom" {
-			vendor = m.inputs["vendor_custom"]
-		}
 		alias := m.inputs["alias"]
 		if alias == "" {
 			alias = m.inputs["model"]
