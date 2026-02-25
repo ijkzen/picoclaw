@@ -139,7 +139,6 @@ func (m Model) ViewForm() string {
 	return b.String()
 }
 
-
 // ViewFormHelp renders the help text for form view
 func (m Model) ViewFormHelp() string {
 	help := []string{

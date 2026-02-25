@@ -199,15 +199,15 @@ func NewModel() (*Model, error) {
 
 	return &Model{
 		CurrentView: ViewList,
-		Config:     cfg,
-		ConfigPath: configPath,
-		Channels:   channels,
-		Cursor:     0,
-		FormCursor: 0,
-		Spinner:    s,
-		Testing:    false,
-		Width:      80,
-		Height:     24,
+		Config:      cfg,
+		ConfigPath:  configPath,
+		Channels:    channels,
+		Cursor:      0,
+		FormCursor:  0,
+		Spinner:     s,
+		Testing:     false,
+		Width:       80,
+		Height:      24,
 	}, nil
 }
 
