@@ -22,7 +22,17 @@ func newAddCommand(storePath func() string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "Add a new scheduled job",
-		Args:  cobra.NoArgs,
+		Long: `Create a new scheduled job that will run the agent with a
+given message on a schedule.
+
+You must specify either --every (interval in seconds) for a repeating
+interval or --cron for a cron expression. --name and --message are
+required. Use --deliver, --channel and --to to have the response
+delivered via an integrated channel.
+`,
+		Example: `  picoclaw cron add --name morning --cron "0 9 * * *" --message "Good morning"
+	  picoclaw cron add --name heartbeat --every 3600 --message "Status check" --deliver --channel telegram --to 12345`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if every <= 0 && cronExp == "" {
 				return fmt.Errorf("either --every or --cron must be specified")

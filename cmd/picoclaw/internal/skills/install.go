@@ -19,6 +19,14 @@ func newInstallCommand(installerFn func() (*skills.SkillInstaller, error)) *cobr
 picoclaw skills install sipeed/picoclaw-skills/weather
 picoclaw skills install --registry clawhub github
 `,
+		Long: `Install a skill into the workspace. By default you supply a
+single GitHub slug (owner/repo) which will be cloned and installed.
+
+If --registry is provided then two arguments are expected: registry
+name and skill slug. Use this when installing from a private or
+central registry. The command validates arguments and will error when
+the inputs are malformed.
+`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if registry != "" {
 				if len(args) != 2 {

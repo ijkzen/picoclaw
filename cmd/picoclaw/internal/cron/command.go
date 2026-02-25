@@ -16,7 +16,19 @@ func NewCronCommand() *cobra.Command {
 		Use:     "cron",
 		Aliases: []string{"c"},
 		Short:   "Manage scheduled tasks",
-		Args:    cobra.NoArgs,
+		Long: `Manage scheduled jobs and reminders handled by picoclaw.
+
+The cron command group allows listing, adding, removing, enabling and
+disabling scheduled jobs. Jobs are persisted in the workspace under the
+cron store (usually ~/.picoclaw/workspace/cron/jobs.json). Use 'cron
+add' to schedule one-time or recurring jobs (supports both --every and
+cron expressions), 'cron list' to view jobs, and 'cron remove' to
+delete jobs by id.
+`,
+		Example: `  picoclaw cron list
+	  picoclaw cron add --name reminder --every 3600 --message "Stand up"
+	  picoclaw cron remove <job-id>`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return cmd.Help()
 		},

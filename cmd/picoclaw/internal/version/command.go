@@ -13,6 +13,17 @@ func NewVersionCommand() *cobra.Command {
 		Use:     "version",
 		Aliases: []string{"v"},
 		Short:   "Show version information",
+		Long: `Display version and build information for the picoclaw binary.
+
+This command prints the current picoclaw release/version, build metadata
+and the Go toolchain version used to build the binary. Use this when
+reporting issues, verifying which binary is installed, or confirming
+embedded build-time metadata.
+
+Flags: none. This command only prints information to stdout.
+`,
+		Example: `  picoclaw version
+  picoclaw version --help`,
 		Run: func(_ *cobra.Command, _ []string) {
 			printVersion()
 		},

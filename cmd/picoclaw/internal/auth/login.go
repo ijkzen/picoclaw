@@ -11,7 +11,17 @@ func newLoginCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Login via OAuth or paste token",
-		Args:  cobra.NoArgs,
+		Long: `Authenticate to a provider and store credentials for future use.
+
+Supported providers include OpenAI, Anthropic and other configured
+backends. By default this command will attempt an interactive OAuth
+flow; use --device-code for headless environments that cannot open a
+browser. The provided provider name must match one of the supported
+providers (e.g. openai, anthropic).
+`,
+		Example: `  picoclaw auth login --provider openai
+	  picoclaw auth login --provider anthropic --device-code`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return authLoginCmd(provider, useDeviceCode)
 		},

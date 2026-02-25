@@ -12,7 +12,15 @@ func NewMigrateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
 		Short: "Migrate from OpenClaw to PicoClaw",
-		Args:  cobra.NoArgs,
+		Long: `Migrate configuration and workspace data from an OpenClaw
+installation into the picoClaw workspace layout.
+
+Useful when upgrading from the older OpenClaw project. Flags allow a
+dry-run to preview changes, refreshing workspace files, or limiting the
+migration to only config or only workspace files. Use --force to skip
+confirmation prompts.
+`,
+		Args: cobra.NoArgs,
 		Example: `  picoclaw migrate
   picoclaw migrate --dry-run
   picoclaw migrate --refresh

@@ -15,7 +15,18 @@ func NewAgentCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "agent",
 		Short: "Interact with the agent directly",
-		Args:  cobra.NoArgs,
+		Long: `Start an interactive chat session with the AI agent or send a single
+message in one-shot mode.
+
+Use this command to converse with the configured agent. Run without flags
+to start an interactive REPL-like session. Use -m/--message to send a
+single message non-interactively and exit. You can override the model
+with --model and control logging with --debug. The --session flag lets
+you choose a session namespace so conversations are kept separate.
+`,
+		Example: `  picoclaw agent
+	  picoclaw agent -m "What time is it?" --model openai/gpt-4`,
+		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return agentCmd(message, sessionKey, model, debug)
 		},

@@ -13,6 +13,13 @@ func newRemoveCommand(installerFn func() (*skills.SkillInstaller, error)) *cobra
 		Short:   "Remove installed skill",
 		Args:    cobra.ExactArgs(1),
 		Example: `picoclaw skills remove weather`,
+		Long: `Uninstall a skill from the workspace by name.
+
+This removes the skill files so the agent no longer loads them. Use
+the exact skill name as shown by 'picoclaw skills list'. Removal is
+permanent for the workspace copy; if you need to keep the files back
+them up first.
+`,
 		RunE: func(_ *cobra.Command, args []string) error {
 			installer, err := installerFn()
 			if err != nil {

@@ -22,6 +22,17 @@ func NewSkillsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "skills",
 		Short: "Manage skills",
+		Long: `Manage installation and inspection of skills (extensions) for
+picoclaw.
+
+Skills are reusable scripts and integrations that extend the agent's
+capabilities. This command group provides subcommands to list installed
+skills, install from GitHub or registries, install builtin skills into
+the workspace, remove skills, search for new skills, and show details
+about a specific skill.
+`,
+		Example: `  picoclaw skills list
+	  picoclaw skills install sipeed/picoclaw-skills/weather`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			cfg, err := internal.LoadConfig()
 			if err != nil {
