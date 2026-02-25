@@ -60,53 +60,33 @@ func (m editModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				// prepare inputs
 				m.inputs = make(map[string]*textinput.Model)
-				// for supported vendors allow edit of alias and api key only
-				if m.supported {
+				newTI := func(placeholder, value string, limit int) *textinput.Model {
 					ti := textinput.New()
-					ti.Placeholder = "alias"
-					ti.SetValue(m.mc.ModelName)
-					ti.CharLimit = 256
-					tiPtr := &ti
-					tiPtr.Focus()
-					m.inputs["alias"] = tiPtr
+					ti.Placeholder = placeholder
+					ti.SetValue(value)
+					ti.CharLimit = limit
+					return &ti
+				}
 
-					tk := textinput.New()
-					tk.Placeholder = "api_key"
-					tk.SetValue(m.mc.APIKey)
-					tk.CharLimit = 1024
-					tkPtr := &tk
-					m.inputs["api_key"] = tkPtr
-					m.focusIndex = 0
+				// openai and unknown vendors -> allow editing all fields; supported others -> alias+api_key
+				if vendor == "openai" || !m.supported {
+					m.inputs["model"] = newTI("model (vendor/model)", m.mc.Model, 512)
+					m.inputs["alias"] = newTI("alias", m.mc.ModelName, 256)
+					m.inputs["api_base"] = newTI("api_base", m.mc.APIBase, 1024)
+					m.inputs["api_key"] = newTI("api_key", m.mc.APIKey, 1024)
 				} else {
-					tModel := textinput.New()
-					tModel.Placeholder = "model (vendor/model)"
-					tModel.SetValue(m.mc.Model)
-					tModel.CharLimit = 512
-					tModelPtr := &tModel
-					tModelPtr.Focus()
-					m.inputs["model"] = tModelPtr
+					m.inputs["alias"] = newTI("alias", m.mc.ModelName, 256)
+					m.inputs["api_key"] = newTI("api_key", m.mc.APIKey, 1024)
+				}
 
-					tAlias := textinput.New()
-					tAlias.Placeholder = "alias"
-					tAlias.SetValue(m.mc.ModelName)
-					tAlias.CharLimit = 256
-					tAliasPtr := &tAlias
-					m.inputs["alias"] = tAliasPtr
-
-					tBase := textinput.New()
-					tBase.Placeholder = "api_base"
-					tBase.SetValue(m.mc.APIBase)
-					tBase.CharLimit = 1024
-					tBasePtr := &tBase
-					m.inputs["api_base"] = tBasePtr
-
-					tKey := textinput.New()
-					tKey.Placeholder = "api_key"
-					tKey.SetValue(m.mc.APIKey)
-					tKey.CharLimit = 1024
-					tKeyPtr := &tKey
-					m.inputs["api_key"] = tKeyPtr
-					m.focusIndex = 0
+				// focus first input deterministically
+				order := []string{"model", "alias", "api_base", "api_key"}
+				for i, k := range order {
+					if ti, ok := m.inputs[k]; ok {
+						ti.Focus()
+						m.focusIndex = i
+						break
+					}
 				}
 				m.stage = 1
 			case "q", "ctrl+c":
