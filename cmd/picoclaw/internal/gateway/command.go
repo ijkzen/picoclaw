@@ -5,29 +5,25 @@ import (
 )
 
 func NewGatewayCommand() *cobra.Command {
-	var debug bool
-
 	cmd := &cobra.Command{
 		Use:     "gateway",
 		Aliases: []string{"g"},
-		Short:   "Start picoclaw gateway",
-		Long: `Start the HTTP gateway which exposes webhook and health endpoints
+		Short:   "Manage picoclaw gateway",
+		Long: `Manage the HTTP gateway which exposes webhook and health endpoints
 for channel integrations (Telegram, Discord, etc.).
 
 The gateway runs an HTTP server and handles incoming messages from
-integrated chat platforms. Use --debug to enable verbose logging. The
-gateway should generally be run on a server or container and may need
-ports opened for webhooks.
+integrated chat platforms. Use 'gateway start' to run in background,
+or 'gateway run' to run in foreground.
 `,
-		Example: `  picoclaw gateway
-	  picoclaw gateway --debug`,
 		Args: cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
-			return gatewayCmd(debug)
-		},
 	}
 
-	cmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug logging")
+	// Add subcommands
+	cmd.AddCommand(NewStartCommand())
+	cmd.AddCommand(NewStopCommand())
+	cmd.AddCommand(NewStatusCommand())
+	cmd.AddCommand(NewRunCommand())
 
 	return cmd
 }
