@@ -44,8 +44,10 @@ func (m *Model) InitFormForChannel(channelName string) {
 		textInput := textinput.New()
 		textInput.Placeholder = field.Placeholder
 		textInput.SetValue(field.Value)
+		textInput.Width = 50
 		if field.Type == FieldTypePassword {
 			textInput.EchoMode = textinput.EchoPassword
+			textInput.EchoCharacter = '•'
 		}
 
 		m.FormInputs = append(m.FormInputs, textInput)

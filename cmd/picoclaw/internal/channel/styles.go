@@ -102,14 +102,10 @@ var Styles = struct {
 		Align(lipgloss.Right),
 
 	FormInput: lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#CCCCCC")).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#888888")),
+		Foreground(lipgloss.Color("#CCCCCC")),
 
 	FormFocused: lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFFFFF")).
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("#7D56F4")).
 		Bold(true),
 
 	FormHelp: lipgloss.NewStyle().

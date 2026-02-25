@@ -114,19 +114,22 @@ func (m Model) ViewForm() string {
 				value = Styles.Disabled.Render("✗ Disabled")
 			}
 		} else if i < len(m.FormInputs) {
+			// Use the textinput's own view (it has its own styling)
+			inputView := m.FormInputs[i].View()
 			if isFocused {
-				value = Styles.FormFocused.Render(m.FormInputs[i].View())
+				// Add subtle highlight for focused field
+				value = Styles.FormFocused.Render(inputView)
 			} else {
-				value = Styles.FormInput.Render(m.FormInputs[i].View())
+				value = Styles.FormInput.Render(inputView)
 			}
 		}
 
+		// Build the line with proper spacing
 		if isFocused {
-			b.WriteString(fmt.Sprintf("▶ %s %s", label, value))
+			b.WriteString(fmt.Sprintf("▶ %s %s\n", label, value))
 		} else {
-			b.WriteString(fmt.Sprintf("  %s %s", label, value))
+			b.WriteString(fmt.Sprintf("  %s %s\n", label, value))
 		}
-		b.WriteString("\n")
 	}
 
 	// Help footer
@@ -135,6 +138,7 @@ func (m Model) ViewForm() string {
 
 	return b.String()
 }
+
 
 // ViewFormHelp renders the help text for form view
 func (m Model) ViewFormHelp() string {
