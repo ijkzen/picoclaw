@@ -26,7 +26,7 @@ func DefaultConfig() *Config {
 		Channels: ChannelsConfig{
 			WhatsApp: WhatsAppConfig{
 				Enabled:   false,
-				BridgeURL: "ws://localhost:3001",
+				BridgeURL: "",
 				AllowFrom: FlexibleStringSlice{},
 			},
 			Telegram: TelegramConfig{
@@ -50,7 +50,7 @@ func DefaultConfig() *Config {
 			},
 			MaixCam: MaixCamConfig{
 				Enabled:   false,
-				Host:      "0.0.0.0",
+				Host:      "",
 				Port:      18790,
 				AllowFrom: FlexibleStringSlice{},
 			},
@@ -83,7 +83,7 @@ func DefaultConfig() *Config {
 			},
 			OneBot: OneBotConfig{
 				Enabled:            false,
-				WSUrl:              "ws://127.0.0.1:3001",
+				WSUrl:              "",
 				AccessToken:        "",
 				ReconnectInterval:  5,
 				GroupTriggerPrefix: []string{},
