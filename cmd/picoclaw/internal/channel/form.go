@@ -210,33 +210,45 @@ func (m *Model) InitWhatsAppForm() {
 	}
 }
 
-// SaveFormToConfig saves the form values to the config
+// SaveFormToConfig saves the form values to the config and enables the channel
 func (m *Model) SaveFormToConfig() {
 	switch m.SelectedChannel {
 	case "telegram":
 		m.SaveTelegramConfig()
+		m.Config.Channels.Telegram.Enabled = true
 	case "discord":
 		m.SaveDiscordConfig()
+		m.Config.Channels.Discord.Enabled = true
 	case "slack":
 		m.SaveSlackConfig()
+		m.Config.Channels.Slack.Enabled = true
 	case "qq":
 		m.SaveQQConfig()
+		m.Config.Channels.QQ.Enabled = true
 	case "dingtalk":
 		m.SaveDingTalkConfig()
+		m.Config.Channels.DingTalk.Enabled = true
 	case "wecom":
 		m.SaveWeComConfig()
+		m.Config.Channels.WeCom.Enabled = true
 	case "wecom_app":
 		m.SaveWeComAppConfig()
+		m.Config.Channels.WeComApp.Enabled = true
 	case "feishu":
 		m.SaveFeishuConfig()
+		m.Config.Channels.Feishu.Enabled = true
 	case "line":
 		m.SaveLineConfig()
+		m.Config.Channels.LINE.Enabled = true
 	case "onebot":
 		m.SaveOneBotConfig()
+		m.Config.Channels.OneBot.Enabled = true
 	case "maixcam":
 		m.SaveMaixCamConfig()
+		m.Config.Channels.MaixCam.Enabled = true
 	case "whatsapp":
 		m.SaveWhatsAppConfig()
+		m.Config.Channels.WhatsApp.Enabled = true
 	}
 }
 
