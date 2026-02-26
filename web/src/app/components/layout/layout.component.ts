@@ -10,6 +10,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-layout',
@@ -88,9 +89,9 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
           
           <button
             mat-icon-button
-            (click)="toggleTheme()"
+            (click)="onToggleTheme($event)"
             matTooltip="Toggle theme">
-            <mat-icon>{{ isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+            <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
           </button>
         </mat-toolbar>
 
@@ -190,40 +191,21 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 })
 export class LayoutComponent implements OnInit {
   isHandset = signal(false);
-  isDarkMode = signal(false);
 
-  constructor(private breakpointObserver: BreakpointObserver) {}
+  constructor(
+    private breakpointObserver: BreakpointObserver,
+    public themeService: ThemeService,
+  ) {}
 
   ngOnInit(): void {
     this.breakpointObserver.observe(Breakpoints.Handset)
       .subscribe(result => {
         this.isHandset.set(result.matches);
       });
-
-    // Check for saved theme preference
-    const savedTheme = localStorage.getItem('picoclaw-theme');
-    if (savedTheme) {
-      this.isDarkMode.set(savedTheme === 'dark');
-      this.applyTheme();
-    } else {
-      // Check system preference
-      this.isDarkMode.set(window.matchMedia('(prefers-color-scheme: dark)').matches);
-      this.applyTheme();
-    }
   }
 
-  toggleTheme(): void {
-    this.isDarkMode.update(current => !current);
-    this.applyTheme();
-    localStorage.setItem('picoclaw-theme', this.isDarkMode() ? 'dark' : 'light');
-  }
-
-  private applyTheme(): void {
-    const html = document.documentElement;
-    if (this.isDarkMode()) {
-      html.classList.add('dark');
-    } else {
-      html.classList.remove('dark');
-    }
+  onToggleTheme(event: MouseEvent): void {
+    // Delegate to ThemeService which handles storage and transitions
+    void this.themeService.toggleThemeWithTransition(event);
   }
 }

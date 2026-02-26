@@ -39,12 +39,8 @@ export class ThemeService {
     html.style.setProperty('--theme-toggle-y', `${y}px`);
 
     // Use View Transitions API when available
-    const startViewTransition = (document as any).startViewTransition as
-      | ((callback: () => void) => { ready?: Promise<void> | undefined })
-      | undefined;
-
-    if (typeof startViewTransition === 'function') {
-      const transition = startViewTransition(() => {
+    if (typeof (document as any).startViewTransition === 'function') {
+      const transition = (document as any).startViewTransition(() => {
         // perform the actual theme toggle inside the transition
         this.toggleTheme();
       });
