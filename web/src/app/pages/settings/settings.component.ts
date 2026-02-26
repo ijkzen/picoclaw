@@ -1,19 +1,19 @@
-import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatCardModule } from '@angular/material/card';
-import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTabsModule } from '@angular/material/tabs';
 import { Config, ModelConfig } from '../../models/config.model';
 import { ApiService } from '../../services/api.service';
 
@@ -63,7 +63,7 @@ import { ApiService } from '../../services/api.service';
             <div class="tab-content">
               <mat-card>
                 <mat-card-header>
-                  <mat-icon mat-card-avatar>stars</mat-icon>
+                  <mat-icon >stars</mat-icon>
                   <mat-card-title>Default Model</mat-card-title>
                 </mat-card-header>
                 <mat-card-content>
@@ -152,16 +152,15 @@ import { ApiService } from '../../services/api.service';
             <div class="tab-content">
               <mat-card>
                 <mat-card-header>
-                  <mat-icon mat-card-avatar>chat</mat-icon>
+                  <mat-icon >chat</mat-icon>
                   <mat-card-title>Chat Channel Configuration</mat-card-title>
                   <mat-card-subtitle>Configure integrations with chat platforms</mat-card-subtitle>
                 </mat-card-header>
               </mat-card>
 
-              <@for (channel of channelConfigs(); track channel.key) {
+              @for (channel of channelConfigs(); track channel.key) {
                 <mat-card style="margin-top: 16px;">
                   <mat-card-header>
-                    <mat-icon mat-card-avatar>{{ channel.icon }}</mat-icon>
                     <mat-card-title>{{ channel.name }}</mat-card-title>
                     <mat-card-subtitle>{{ channel.description }}</mat-card-subtitle>
                   </mat-card-header>
@@ -176,7 +175,7 @@ import { ApiService } from '../../services/api.service';
                     @if (channel.config.enabled) {
                       <mat-divider style="margin: 16px 0;"></mat-divider>
                       
-                      <@for (field of channel.fields; track field.key) {
+                      @for (field of channel.fields; track field.key) {
                         <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 8px;">
                           <mat-label>{{ field.label }}</mat-label>
                           @if (field.type === 'password') {
@@ -203,7 +202,7 @@ import { ApiService } from '../../services/api.service';
             <div class="tab-content">
               <mat-card>
                 <mat-card-header>
-                  <mat-icon mat-card-avatar>search</mat-icon>
+                  <mat-icon >search</mat-icon>
                   <mat-card-title>Web Search</mat-card-title>
                 </mat-card-header>
                 <mat-card-content>
@@ -307,7 +306,7 @@ import { ApiService } from '../../services/api.service';
 
               <mat-card style="margin-top: 16px;">
                 <mat-card-header>
-                  <mat-icon mat-card-avatar>schedule</mat-icon>
+                  <mat-icon >schedule</mat-icon>
                   <mat-card-title>Scheduled Tasks</mat-card-title>
                 </mat-card-header>
                 <mat-card-content>
@@ -326,7 +325,7 @@ import { ApiService } from '../../services/api.service';
             <div class="tab-content">
               <mat-card>
                 <mat-card-header>
-                  <mat-icon mat-card-avatar>favorite</mat-icon>
+                  <mat-icon >favorite</mat-icon>
                   <mat-card-title>Heartbeat Configuration</mat-card-title>
                   <mat-card-subtitle>Configure periodic task execution</mat-card-subtitle>
                 </mat-card-header>
@@ -371,6 +370,16 @@ import { ApiService } from '../../services/api.service';
       max-width: 900px;
       margin: 0 auto;
       padding: 16px;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 120px);
+    }
+
+    mat-tab-group {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
     }
 
     .header-card {
@@ -383,8 +392,20 @@ import { ApiService } from '../../services/api.service';
       padding: 48px;
     }
 
-    .tab-content {
-      padding: 16px 0;
+.tab-content {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    mat-expansion-panel {
+      margin: 0 16px 12px 16px;
+    }
+
+    mat-accordion {
+      display: block;
+      margin-top: 16px;
     }
   `]
 })
@@ -460,6 +481,84 @@ export class SettingsComponent implements OnInit {
         { key: 'webhook_host', label: 'Webhook Host' },
         { key: 'webhook_port', label: 'Webhook Port', type: 'number' },
         { key: 'webhook_path', label: 'Webhook Path' }
+      ]
+    },
+    {
+      key: 'dingtalk',
+      name: 'DingTalk',
+      icon: 'notifications',
+      description: 'DingTalk Bot integration',
+      config: { enabled: false, client_id: '', client_secret: '', allow_from: [] },
+      fields: [
+        { key: 'client_id', label: 'Client ID' },
+        { key: 'client_secret', label: 'Client Secret', type: 'password' },
+        { key: 'allow_from', label: 'Allowed User IDs (comma separated)' }
+      ]
+    },
+    {
+      key: 'qq',
+      name: 'QQ',
+      icon: 'chat_bubble',
+      description: 'QQ Bot integration',
+      config: { enabled: false, app_id: '', app_secret: '', allow_from: [] },
+      fields: [
+        { key: 'app_id', label: 'App ID' },
+        { key: 'app_secret', label: 'App Secret', type: 'password' },
+        { key: 'allow_from', label: 'Allowed User IDs (comma separated)' }
+      ]
+    },
+    {
+      key: 'feishu',
+      name: 'Feishu',
+      icon: 'work',
+      description: 'Feishu Bot integration',
+      config: { enabled: false, app_id: '', app_secret: '', encrypt_key: '', verification_token: '', allow_from: [] },
+      fields: [
+        { key: 'app_id', label: 'App ID' },
+        { key: 'app_secret', label: 'App Secret', type: 'password' },
+        { key: 'encrypt_key', label: 'Encrypt Key', type: 'password' },
+        { key: 'verification_token', label: 'Verification Token' },
+        { key: 'allow_from', label: 'Allowed User IDs (comma separated)' }
+      ]
+    },
+    {
+      key: 'wecom',
+      name: 'WeCom',
+      icon: 'business',
+      description: 'WeCom Bot integration',
+      config: { enabled: false, token: '', encoding_aes_key: '', webhook_url: '', webhook_host: '0.0.0.0', webhook_port: 18793, webhook_path: '/webhook/wecom', allow_from: [] },
+      fields: [
+        { key: 'token', label: 'Token' },
+        { key: 'encoding_aes_key', label: 'Encoding AES Key', type: 'password' },
+        { key: 'webhook_url', label: 'Webhook URL' },
+        { key: 'webhook_host', label: 'Webhook Host' },
+        { key: 'webhook_port', label: 'Webhook Port', type: 'number' },
+        { key: 'webhook_path', label: 'Webhook Path' }
+      ]
+    },
+    {
+      key: 'onebot',
+      name: 'OneBot',
+      icon: 'developer_board',
+      description: 'OneBot protocol (NapCat/Go-CQHTTP)',
+      config: { enabled: false, ws_url: 'ws://127.0.0.1:3001', access_token: '', reconnect_interval: 30, group_trigger_prefix: [], allow_from: [] },
+      fields: [
+        { key: 'ws_url', label: 'WebSocket URL' },
+        { key: 'access_token', label: 'Access Token', type: 'password' },
+        { key: 'reconnect_interval', label: 'Reconnect Interval (seconds)', type: 'number' },
+        { key: 'allow_from', label: 'Allowed User IDs (comma separated)' }
+      ]
+    },
+    {
+      key: 'maixcam',
+      name: 'MaixCam',
+      icon: 'camera_alt',
+      description: 'MaixCam AI camera integration',
+      config: { enabled: false, host: '0.0.0.0', port: 18794, allow_from: [] },
+      fields: [
+        { key: 'host', label: 'Host' },
+        { key: 'port', label: 'Port', type: 'number' },
+        { key: 'allow_from', label: 'Allowed Device IDs (comma separated)' }
       ]
     }
   ]);
