@@ -1,10 +1,11 @@
-.PHONY: all build install uninstall clean help test
+.PHONY: all build build-web install uninstall clean help test
 
 # Build variables
 BINARY_NAME=picoclaw
 BUILD_DIR=build
 CMD_DIR=cmd/$(BINARY_NAME)
 MAIN_GO=$(CMD_DIR)/main.go
+WEB_DIR=web
 
 # Version
 VERSION?=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -20,6 +21,9 @@ GOFLAGS?=-v -tags stdjson
 
 # Golangci-lint
 GOLANGCI_LINT?=golangci-lint
+
+# PNPM
+PNPM?=pnpm
 
 # Installation
 INSTALL_PREFIX?=$(HOME)/.local
@@ -70,8 +74,17 @@ BINARY_PATH=$(BUILD_DIR)/$(BINARY_NAME)-$(PLATFORM)-$(ARCH)
 # Default target
 all: build
 
+## build-web: Build the web UI
+build-web:
+	@echo "Building web UI..."
+	@cd $(WEB_DIR) && $(PNPM) install && $(PNPM) run build
+	@mkdir -p pkg/web/dist
+	@rm -rf pkg/web/dist/*
+	@cp -r $(WEB_DIR)/dist/web/* pkg/web/dist/
+	@echo "Web UI build complete"
+
 ## generate: Run generate
-generate:
+generate: build-web
 	@echo "Run generate..."
 	@rm -r ./$(CMD_DIR)/workspace 2>/dev/null || true
 	@$(GO) generate ./...
@@ -101,7 +114,6 @@ build-all: generate
 install: build
 	@echo "Installing $(BINARY_NAME)..."
 	@mkdir -p $(INSTALL_BIN_DIR)
-	# Copy binary with temporary suffix to ensure atomic update
 	@cp $(BUILD_DIR)/$(BINARY_NAME) $(INSTALL_BIN_DIR)/$(BINARY_NAME)$(INSTALL_TMP_SUFFIX)
 	@chmod +x $(INSTALL_BIN_DIR)/$(BINARY_NAME)$(INSTALL_TMP_SUFFIX)
 	@mv -f $(INSTALL_BIN_DIR)/$(BINARY_NAME)$(INSTALL_TMP_SUFFIX) $(INSTALL_BIN_DIR)/$(BINARY_NAME)
@@ -127,6 +139,7 @@ uninstall-all:
 clean:
 	@echo "Cleaning build artifacts..."
 	@rm -rf $(BUILD_DIR)
+	@cd $(WEB_DIR) && rm -rf dist node_modules
 	@echo "Clean complete"
 
 ## vet: Run go vet for static analysis
@@ -180,7 +193,6 @@ help:
 	@echo "  make build              # Build for current platform"
 	@echo "  make install            # Install to ~/.local/bin"
 	@echo "  make uninstall          # Remove from /usr/local/bin"
-	@echo "  make install-skills     # Install skills to workspace"
 	@echo ""
 	@echo "Environment Variables:"
 	@echo "  INSTALL_PREFIX          # Installation prefix (default: ~/.local)"

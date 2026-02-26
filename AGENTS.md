@@ -156,3 +156,313 @@ docker compose run --rm picoclaw-agent -m "..."
 ### Chat Channels
 
 Telegram, Discord, Slack, LINE, DingTalk, QQ, WeCom, Feishu, WhatsApp, OneBot
+
+
+## FRONTEND DEVELOPMENT WORKFLOW
+
+This section describes the complete workflow for developing and verifying the PicoClaw Web UI using Playwright MCP.
+
+### Quick Reference
+
+```bash
+# 1. Make changes to frontend files in web/src/
+# 2. Build frontend
+cd /Users/ijkzen/Projects/GO-Project/picoclaw/web && pnpm run build
+
+# 3. Copy build artifacts
+rm -rf /Users/ijkzen/Projects/GO-Project/picoclaw/pkg/web/dist/*
+cp -r /Users/ijkzen/Projects/GO-Project/picoclaw/web/dist/web/* /Users/ijkzen/Projects/GO-Project/picoclaw/pkg/web/dist/
+
+# 4. Build and install backend
+cd /Users/ijkzen/Projects/GO-Project/picoclaw && make install
+
+# 5. Restart gateway
+picoclaw gateway stop && sleep 1 && picoclaw gateway start
+
+# 6. Verify with Playwright MCP (see examples below)
+```
+
+### Frontend Project Structure
+
+```
+web/
+├── src/
+│   ├── app/
+│   │   ├── components/     # Shared components
+│   │   │   └── layout/     # Sidebar layout component
+│   │   ├── pages/          # Page components
+│   │   │   ├── chat/       # Chat interface
+│   │   │   └── settings/   # Settings interface
+│   │   ├── services/       # API services
+│   │   └── models/         # TypeScript interfaces
+│   ├── styles.scss         # Global styles + Angular Material theme
+│   └── index.html
+├── angular.json
+└── package.json
+```
+
+### Common Modifications
+
+#### Global Flat Card Style
+
+Edit `web/src/app/app.config.ts`:
+
+```typescript
+import { MAT_CARD_CONFIG } from '@angular/material/card';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    // ... other providers
+    {
+      provide: MAT_CARD_CONFIG,
+      useValue: {
+        appearance: 'outlined'  // Flat style for all cards
+      }
+    }
+  ]
+};
+```
+
+#### Fixed Input at Bottom of Chat
+
+Edit `web/src/app/pages/chat/chat.component.ts`:
+
+```typescript
+// Template structure
+<div class="chat-wrapper">
+  <div class="messages-area">     <!-- flex: 1, scrollable -->
+    <!-- Messages list -->
+  </div>
+  <div class="input-area">        <!-- Fixed at bottom -->
+    <!-- Input field and send button -->
+  </div>
+</div>
+
+// Key CSS styles
+.chat-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.messages-area {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.input-area {
+  flex-shrink: 0;
+  background: var(--mat-sys-surface);
+}
+```
+
+#### Angular Material Theme Setup
+
+Edit `web/src/styles.scss`:
+
+```scss
+// Angular Material Theming - @use must come first
+@use '@angular/material' as mat;
+
+// Import Tailwind CSS (optional, can coexist)
+@import "tailwindcss";
+
+// Define theme
+$web-theme: (
+  color: (
+    theme-type: light,
+    primary: mat.$azure-palette,
+    tertiary: mat.$blue-palette,
+  ),
+  typography: Roboto,
+  density: 0,
+);
+
+@include mat.core();
+@include mat.theme($web-theme);
+
+// Dark theme support
+.dark {
+  @include mat.theme((
+    color: (
+      theme-type: dark,
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: Roboto,
+    density: 0,
+  ));
+}
+```
+
+### Playwright MCP Verification
+
+#### Basic Navigation and Screenshot
+
+```typescript
+// Navigate to web UI
+skill_mcp({
+  mcp_name: "playwright",
+  tool_name: "browser_navigate",
+  arguments: { url: "http://127.0.0.1:18791/" }
+});
+
+// Set viewport size for consistent screenshots
+skill_mcp({
+  mcp_name: "playwright",
+  tool_name: "browser_resize",
+  arguments: { width: 1280, height: 800 }
+});
+
+// Take screenshot
+skill_mcp({
+  mcp_name: "playwright",
+  tool_name: "browser_take_screenshot",
+  arguments: {
+    filename: "verification.png",
+    type: "png"
+  }
+});
+
+// Cleanup
+skill_mcp({
+  mcp_name: "playwright",
+  tool_name: "browser_close"
+});
+```
+
+#### Interactive Testing Example
+
+```typescript
+// Navigate to settings page
+skill_mcp({
+  mcp_name: "playwright",
+  tool_name: "browser_navigate",
+  arguments: { url: "http://127.0.0.1:18791/settings" }
+});
+
+// Click on Models tab
+skill_mcp({
+  mcp_name: "playwright",
+  tool_name: "browser_click",
+  arguments: {
+    element: "Models tab",
+    ref: "e89"  // Reference from page snapshot
+  }
+});
+
+// Fill form field
+skill_mcp({
+  mcp_name: "playwright",
+  tool_name: "browser_type",
+  arguments: {
+    ref: "e115",
+    text: "gpt-4"
+  }
+});
+
+// Take full page screenshot
+skill_mcp({
+  mcp_name: "playwright",
+  tool_name: "browser_take_screenshot",
+  arguments: {
+    filename: "settings_full.png",
+    type: "png",
+    fullPage: true
+  }
+});
+```
+
+### Verification Checklist
+
+Before submitting changes:
+
+- [ ] Frontend builds without errors (`pnpm run build`)
+- [ ] Backend builds successfully (`make install`)
+- [ ] Gateway starts and web UI is accessible
+- [ ] Playwright MCP can navigate to page
+- [ ] Screenshot shows expected layout
+- [ ] Input components are properly positioned
+- [ ] No console errors in browser
+- [ ] Responsive design works at 1280x800 and mobile sizes
+
+### Troubleshooting
+
+#### Build Errors
+
+**`@use rules must be written before any other rules`**
+- Ensure `@use '@angular/material' as mat;` comes before `@import` in styles.scss
+
+**`NG5002: @else block must be last`**
+- Check template for duplicate `@else` blocks in @if statements
+
+**Module not found errors**
+- Run `pnpm install` to ensure all dependencies are installed
+
+#### Layout Issues
+
+**Input not sticking to bottom:**
+- Verify parent has `display: flex; flex-direction: column; height: 100%;`
+- Messages container needs `flex: 1; overflow-y: auto;`
+- Input container needs `flex-shrink: 0;`
+
+**Content not scrolling:**
+- Ensure `overflow-y: auto` is set on scrollable containers
+- Check that parent containers have defined heights
+
+#### Playwright MCP Issues
+
+**Cannot connect to gateway:**
+- Verify gateway status: `picoclaw gateway status`
+- Check if port 18791 is accessible
+- Ensure no firewall blocking local connections
+
+**Page elements not found:**
+- Use `browser_snapshot` to get current page structure
+- Element references change between page loads
+- Always get fresh references before interactions
+
+### Complete Example: Layout Modification
+
+Here's a complete workflow example for modifying the chat page layout:
+
+```bash
+# Step 1: Edit chat.component.ts
+# - Remove welcome card
+# - Fix input at bottom
+# - Update styles
+
+# Step 2: Build
+$ cd /Users/ijkzen/Projects/GO-Project/picoclaw/web
+$ pnpm run build
+✔ Building...
+Output location: /Users/ijkzen/Projects/GO-Project/picoclaw/web/dist/web
+
+# Step 3: Copy to pkg
+$ rm -rf /Users/ijkzen/Projects/GO-Project/picoclaw/pkg/web/dist/*
+$ cp -r /Users/ijkzen/Projects/GO-Project/picoclaw/web/dist/web/* \
+    /Users/ijkzen/Projects/GO-Project/picoclaw/pkg/web/dist/
+
+# Step 4: Build backend
+$ cd /Users/ijkzen/Projects/GO-Project/picoclaw
+$ make install
+Building picoclaw for darwin/arm64...
+Build complete: build/picoclaw-darwin-arm64
+Installation complete!
+
+# Step 5: Restart gateway
+$ picoclaw gateway stop && sleep 1 && picoclaw gateway start
+✓ Gateway stopped
+✓ Gateway started in background (PID: xxxxx)
+
+# Step 6: Verify via Playwright MCP
+# (Execute MCP commands as shown in examples above)
+```
+
+### References
+
+- [Angular Material Components](https://material.angular.dev/components/categories)
+- [Angular Material Card API](https://material.angular.dev/components/card/api)
+- [Playwright MCP Documentation](https://github.com/microsoft/playwright-mcp)
+- [Angular Flex Layout Guide](https://material.angular.dev/guides)
+

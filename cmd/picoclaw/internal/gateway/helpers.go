@@ -25,6 +25,7 @@ import (
 	"github.com/sipeed/picoclaw/pkg/state"
 	"github.com/sipeed/picoclaw/pkg/tools"
 	"github.com/sipeed/picoclaw/pkg/voice"
+	"github.com/sipeed/picoclaw/pkg/web"
 )
 
 func gatewayCmd(debug bool) error {
@@ -196,6 +197,16 @@ func gatewayCmd(debug bool) error {
 	}()
 	fmt.Printf("✓ Health endpoints available at http://%s:%d/health and /ready\n", cfg.Gateway.Host, cfg.Gateway.Port)
 
+	// Start Web UI server
+	webServer := web.NewServer(cfg.Gateway.Host, cfg.Gateway.Port, cfg, agentLoop, msgBus)
+	go func() {
+		webPort := cfg.Gateway.Port + 1
+		fmt.Printf("✓ Web UI available at http://%s:%d\n", cfg.Gateway.Host, webPort)
+		if err := webServer.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.ErrorCF("web", "Web server error", map[string]any{"error": err.Error()})
+		}
+	}()
+
 	go agentLoop.Run(ctx)
 
 	sigChan := make(chan os.Signal, 1)
@@ -208,6 +219,7 @@ func gatewayCmd(debug bool) error {
 	}
 	cancel()
 	healthServer.Stop(context.Background())
+	webServer.Stop(context.Background())
 	deviceService.Stop()
 	heartbeatService.Stop()
 	cronService.Stop()
