@@ -13,7 +13,6 @@ import (
 
 	"github.com/sipeed/picoclaw/pkg/logger"
 	"github.com/sipeed/picoclaw/pkg/providers"
-	"github.com/sipeed/picoclaw/pkg/utils"
 )
 
 // ToolLoopConfig configures the tool execution loop.
@@ -123,9 +122,7 @@ func RunToolLoop(
 
 		// 7. Execute tool calls
 		for _, tc := range normalizedToolCalls {
-			argsJSON, _ := json.Marshal(tc.Arguments)
-			argsPreview := utils.Truncate(string(argsJSON), 200)
-			logger.InfoCF("toolloop", fmt.Sprintf("Tool call: %s(%s)", tc.Name, argsPreview),
+			logger.InfoCF("toolloop", "Tool call requested",
 				map[string]any{
 					"tool":      tc.Name,
 					"iteration": iteration,

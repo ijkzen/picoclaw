@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/sipeed/picoclaw/cmd/picoclaw/internal"
+	"github.com/sipeed/picoclaw/pkg/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -55,12 +56,18 @@ func signalProcess(pid int, sig os.Signal) error {
 }
 
 func startGateway(debug bool) error {
+	logger.InfoCF("gateway", "Gateway start requested", map[string]any{
+		"debug": debug,
+	})
+
 	// Check if already running
 	running, pid, err := isRunning()
 	if err != nil {
+		logger.ErrorCF("gateway", "Gateway start status check failed", map[string]any{"error": err.Error()})
 		return fmt.Errorf("failed to check gateway status: %w", err)
 	}
 	if running {
+		logger.InfoCF("gateway", "Gateway already running", map[string]any{"pid": pid})
 		fmt.Printf("Gateway is already running (PID: %d)\n", pid)
 		return nil
 	}
@@ -68,12 +75,14 @@ func startGateway(debug bool) error {
 	// Get the executable path
 	exe, err := os.Executable()
 	if err != nil {
+		logger.ErrorCF("gateway", "Gateway start resolve executable failed", map[string]any{"error": err.Error()})
 		return fmt.Errorf("failed to get executable path: %w", err)
 	}
 
 	// Load config to get port
 	cfg, err := internal.LoadConfig()
 	if err != nil {
+		logger.ErrorCF("gateway", "Gateway start load config failed", map[string]any{"error": err.Error()})
 		return fmt.Errorf("error loading config: %w", err)
 	}
 
@@ -92,6 +101,7 @@ func startGateway(debug bool) error {
 
 	// Start the process
 	if err := cmd.Start(); err != nil {
+		logger.ErrorCF("gateway", "Gateway process start failed", map[string]any{"error": err.Error()})
 		return fmt.Errorf("failed to start gateway: %w", err)
 	}
 
@@ -100,8 +110,16 @@ func startGateway(debug bool) error {
 	if err := os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0o644); err != nil {
 		// Try to kill the process if we can't write PID file
 		_ = cmd.Process.Kill()
+		logger.ErrorCF("gateway", "Gateway write pid file failed", map[string]any{"error": err.Error()})
 		return fmt.Errorf("failed to write PID file: %w", err)
 	}
+
+	logger.InfoCF("gateway", "Gateway started",
+		map[string]any{
+			"pid":  cmd.Process.Pid,
+			"host": cfg.Gateway.Host,
+			"port": cfg.Gateway.Port,
+		})
 
 	fmt.Printf("✓ Gateway started in background (PID: %d)\n", cmd.Process.Pid)
 	fmt.Printf("  Listening on %s:%d\n", cfg.Gateway.Host, cfg.Gateway.Port)

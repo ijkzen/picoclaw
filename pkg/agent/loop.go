@@ -36,6 +36,7 @@ type AgentLoop struct {
 	state          *state.Manager
 	running        atomic.Bool
 	summarizing    sync.Map
+	conversations  sync.Map
 	fallback       *providers.FallbackChain
 	channelManager *channels.Manager
 }
@@ -70,12 +71,13 @@ func NewAgentLoop(cfg *config.Config, msgBus *bus.MessageBus, provider providers
 	}
 
 	return &AgentLoop{
-		bus:         msgBus,
-		cfg:         cfg,
-		registry:    registry,
-		state:       stateManager,
-		summarizing: sync.Map{},
-		fallback:    fallbackChain,
+		bus:           msgBus,
+		cfg:           cfg,
+		registry:      registry,
+		state:         stateManager,
+		summarizing:   sync.Map{},
+		conversations: sync.Map{},
+		fallback:      fallbackChain,
 	}
 }
 
@@ -268,14 +270,7 @@ func (al *AgentLoop) ProcessHeartbeat(ctx context.Context, content, channel, cha
 }
 
 func (al *AgentLoop) processMessage(ctx context.Context, msg bus.InboundMessage) (string, error) {
-	// Add message preview to log (show full content for error messages)
-	var logContent string
-	if strings.Contains(msg.Content, "Error:") || strings.Contains(msg.Content, "error") {
-		logContent = msg.Content // Full content for errors
-	} else {
-		logContent = utils.Truncate(msg.Content, 80)
-	}
-	logger.InfoCF("agent", fmt.Sprintf("Processing message from %s:%s: %s", msg.Channel, msg.SenderID, logContent),
+	logger.InfoCF("agent", "Processing message",
 		map[string]any{
 			"channel":     msg.Channel,
 			"chat_id":     msg.ChatID,
@@ -313,6 +308,8 @@ func (al *AgentLoop) processMessage(ctx context.Context, msg bus.InboundMessage)
 	if msg.SessionKey != "" && strings.HasPrefix(msg.SessionKey, "agent:") {
 		sessionKey = msg.SessionKey
 	}
+
+	al.logConversationStart(agent, sessionKey, msg.Channel, msg.ChatID)
 
 	logger.InfoCF("agent", "Routed message",
 		map[string]any{
@@ -456,8 +453,7 @@ func (al *AgentLoop) runAgentLoop(ctx context.Context, agent *AgentInstance, opt
 	}
 
 	// 9. Log response
-	responsePreview := utils.Truncate(finalContent, 120)
-	logger.InfoCF("agent", fmt.Sprintf("Response: %s", responsePreview),
+	logger.InfoCF("agent", "Response generated",
 		map[string]any{
 			"agent_id":     agent.ID,
 			"session_key":  opts.SessionKey,
@@ -659,9 +655,7 @@ func (al *AgentLoop) runLLMIteration(
 
 		// Execute tool calls
 		for _, tc := range normalizedToolCalls {
-			argsJSON, _ := json.Marshal(tc.Arguments)
-			argsPreview := utils.Truncate(string(argsJSON), 200)
-			logger.InfoCF("agent", fmt.Sprintf("Tool call: %s(%s)", tc.Name, argsPreview),
+			logger.InfoCF("agent", "Tool call requested",
 				map[string]any{
 					"agent_id":  agent.ID,
 					"tool":      tc.Name,
@@ -728,6 +722,32 @@ func (al *AgentLoop) runLLMIteration(
 	return finalContent, iteration, nil
 }
 
+func (al *AgentLoop) logConversationStart(agent *AgentInstance, sessionKey, channel, chatID string) {
+	if agent == nil || strings.TrimSpace(sessionKey) == "" {
+		return
+	}
+
+	key := agent.ID + ":" + sessionKey
+	if _, exists := al.conversations.Load(key); exists {
+		return
+	}
+
+	history := agent.Sessions.GetHistory(sessionKey)
+	if len(history) > 0 {
+		al.conversations.Store(key, true)
+		return
+	}
+
+	logger.InfoCF("agent", "Conversation started",
+		map[string]any{
+			"agent_id":    agent.ID,
+			"session_key": sessionKey,
+			"channel":     channel,
+			"chat_id":     chatID,
+		})
+	al.conversations.Store(key, true)
+}
+
 // updateToolContexts updates the context for tools that need channel/chatID info.
 func (al *AgentLoop) updateToolContexts(agent *AgentInstance, channel, chatID string) {
 	// Use ContextualTool interface instead of type assertions
@@ -759,14 +779,14 @@ func (al *AgentLoop) maybeSummarize(agent *AgentInstance, sessionKey, channel, c
 		if _, loading := al.summarizing.LoadOrStore(summarizeKey, true); !loading {
 			go func() {
 				defer al.summarizing.Delete(summarizeKey)
-					// Keep summarization progress visible on most external channels,
-					// but avoid sending this noisy status message to Feishu.
-					if !constants.IsInternalChannel(channel) && channel != "feishu" {
-						al.bus.PublishOutbound(bus.OutboundMessage{
-							Channel: channel,
-							ChatID:  chatID,
-							Content: "Memory threshold reached. Optimizing conversation history...",
-						})
+				// Keep summarization progress visible on most external channels,
+				// but avoid sending this noisy status message to Feishu.
+				if !constants.IsInternalChannel(channel) && channel != "feishu" {
+					al.bus.PublishOutbound(bus.OutboundMessage{
+						Channel: channel,
+						ChatID:  chatID,
+						Content: "Memory threshold reached. Optimizing conversation history...",
+					})
 				}
 				al.summarizeSession(agent, sessionKey)
 			}()

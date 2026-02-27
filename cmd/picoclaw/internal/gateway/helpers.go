@@ -29,6 +29,8 @@ import (
 )
 
 func gatewayCmd(debug bool) error {
+	logger.InfoCF("gateway", "Gateway runtime starting", map[string]any{"debug": debug})
+
 	if debug {
 		logger.SetLevel(logger.DEBUG)
 		fmt.Println("🔍 Debug mode enabled")
@@ -157,6 +159,12 @@ func gatewayCmd(debug bool) error {
 		fmt.Println("⚠ Warning: No channels enabled")
 	}
 
+	logger.InfoCF("gateway", "Gateway runtime ready",
+		map[string]any{
+			"host": cfg.Gateway.Host,
+			"port": cfg.Gateway.Port,
+		})
+
 	fmt.Printf("✓ Gateway started on %s:%d\n", cfg.Gateway.Host, cfg.Gateway.Port)
 	fmt.Println("Press Ctrl+C to stop")
 
@@ -214,6 +222,7 @@ func gatewayCmd(debug bool) error {
 	<-sigChan
 
 	fmt.Println("\nShutting down...")
+	logger.InfoC("gateway", "Gateway runtime shutting down")
 	if cp, ok := provider.(providers.StatefulProvider); ok {
 		cp.Close()
 	}
@@ -226,6 +235,7 @@ func gatewayCmd(debug bool) error {
 	agentLoop.Stop()
 	channelManager.StopAll(ctx)
 	fmt.Println("✓ Gateway stopped")
+	logger.InfoC("gateway", "Gateway runtime stopped")
 
 	return nil
 }

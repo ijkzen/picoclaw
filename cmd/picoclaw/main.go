@@ -9,6 +9,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -24,6 +26,7 @@ import (
 	"github.com/sipeed/picoclaw/cmd/picoclaw/internal/skills"
 	"github.com/sipeed/picoclaw/cmd/picoclaw/internal/status"
 	"github.com/sipeed/picoclaw/cmd/picoclaw/internal/version"
+	"github.com/sipeed/picoclaw/pkg/logger"
 )
 
 func NewPicoclawCommand() *cobra.Command {
@@ -33,6 +36,16 @@ func NewPicoclawCommand() *cobra.Command {
 		Use:     "picoclaw",
 		Short:   short,
 		Example: "picoclaw list",
+		PersistentPreRun: func(command *cobra.Command, _ []string) {
+			if command == nil {
+				return
+			}
+
+			logger.InfoCF("cli", "Command operation",
+				map[string]any{
+					"command": command.CommandPath(),
+				})
+		},
 	}
 
 	cmd.AddCommand(
@@ -53,8 +66,34 @@ func NewPicoclawCommand() *cobra.Command {
 }
 
 func main() {
+	initFileLogging()
+
 	cmd := NewPicoclawCommand()
 	if err := cmd.Execute(); err != nil {
+		logger.ErrorCF("cli", "Command execution failed", map[string]any{
+			"error": err.Error(),
+		})
 		os.Exit(1)
+	}
+}
+
+func initFileLogging() {
+	if strings.TrimSpace(os.Getenv("PICOCLAW_DISABLE_FILE_LOGGING")) == "1" {
+		return
+	}
+
+	if strings.HasSuffix(filepath.Base(os.Args[0]), ".test") {
+		return
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: failed to resolve home directory for logging: %v\n", err)
+		return
+	}
+
+	logDir := filepath.Join(home, ".picoclaw", "logs")
+	if err := logger.EnableDailyFileLogging(logDir, 7); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: failed to initialize file logging: %v\n", err)
 	}
 }

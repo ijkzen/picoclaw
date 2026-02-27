@@ -29,15 +29,17 @@ func TestNewPicoclawCommand(t *testing.T) {
 	assert.Nil(t, cmd.Run)
 	assert.Nil(t, cmd.RunE)
 
-	assert.Nil(t, cmd.PersistentPreRun)
+	assert.NotNil(t, cmd.PersistentPreRun)
 	assert.Nil(t, cmd.PersistentPostRun)
 
 	allowedCommands := []string{
 		"agent",
 		"auth",
+		"channel",
 		"cron",
 		"gateway",
 		"migrate",
+		"models",
 		"onboard",
 		"skills",
 		"status",

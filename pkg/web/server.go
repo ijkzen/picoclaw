@@ -15,6 +15,7 @@ import (
 	"github.com/sipeed/picoclaw/pkg/agent"
 	"github.com/sipeed/picoclaw/pkg/bus"
 	"github.com/sipeed/picoclaw/pkg/config"
+	"github.com/sipeed/picoclaw/pkg/logger"
 )
 
 type Server struct {
@@ -103,6 +104,8 @@ func (s *Server) Stop(ctx context.Context) error {
 }
 
 func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
+	logWebOperation(r, "config")
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -114,12 +117,14 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var newConfig config.Config
 		if err := json.NewDecoder(r.Body).Decode(&newConfig); err != nil {
+			logWebError("config_decode_failed", err)
 			http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusBadRequest)
 			return
 		}
 		homeDir, _ := os.UserHomeDir()
 		configPath := path.Join(homeDir, ".picoclaw", "config.json")
 		if err := config.SaveConfig(configPath, &newConfig); err != nil {
+			logWebError("config_save_failed", err)
 			http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 			return
 		}
@@ -133,6 +138,8 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
+	logWebOperation(r, "models")
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -144,6 +151,8 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDefaultModel(w http.ResponseWriter, r *http.Request) {
+	logWebOperation(r, "default_model")
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -156,6 +165,7 @@ func (s *Server) handleDefaultModel(w http.ResponseWriter, r *http.Request) {
 		ModelName string `json:"model_name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logWebError("default_model_decode_failed", err)
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusBadRequest)
 		return
 	}
@@ -165,6 +175,8 @@ func (s *Server) handleDefaultModel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
+	logWebOperation(r, "chat")
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -178,6 +190,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		SessionKey string `json:"session_key"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		logWebError("chat_decode_failed", err)
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusBadRequest)
 		return
 	}
@@ -189,6 +202,7 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	response, err := s.agentLoop.ProcessDirectWithChannel(ctx, req.Content, req.SessionKey, "web", "default")
 	if err != nil {
+		logWebError("chat_process_failed", err)
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
@@ -197,6 +211,8 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleChatStream(w http.ResponseWriter, r *http.Request) {
+	logWebOperation(r, "chat_stream")
+
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -216,6 +232,7 @@ func (s *Server) handleChatStream(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	response, err := s.agentLoop.ProcessDirectWithChannel(ctx, content, sessionKey, "web", "default")
 	if err != nil {
+		logWebError("chat_stream_process_failed", err)
 		fmt.Fprintf(w, "data: Error: %s\n\n", err.Error())
 		fmt.Fprintf(w, "data: [DONE]\n\n")
 		return
@@ -229,6 +246,8 @@ func (s *Server) handleChatStream(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
+	logWebOperation(r, "status")
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -244,6 +263,8 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleGatewayRestart(w http.ResponseWriter, r *http.Request) {
+	logWebOperation(r, "gateway_restart")
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -254,6 +275,7 @@ func (s *Server) handleGatewayRestart(w http.ResponseWriter, r *http.Request) {
 
 	exe, err := os.Executable()
 	if err != nil {
+		logWebError("gateway_restart_resolve_exe_failed", err)
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
@@ -265,6 +287,7 @@ func (s *Server) handleGatewayRestart(w http.ResponseWriter, r *http.Request) {
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	if err := cmd.Start(); err != nil {
+		logWebError("gateway_restart_start_failed", err)
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
@@ -278,6 +301,7 @@ func (s *Server) saveConfig(w http.ResponseWriter) {
 	homeDir, _ := os.UserHomeDir()
 	configPath := path.Join(homeDir, ".picoclaw", "config.json")
 	if err := config.SaveConfig(configPath, s.cfg); err != nil {
+		logWebError("save_config_failed", err)
 		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
 		return
 	}
@@ -321,4 +345,29 @@ func splitIntoChunks(s string, chunkSize int) []string {
 		chunks = append(chunks, string(runes[i:end]))
 	}
 	return chunks
+}
+
+func logWebOperation(r *http.Request, operation string) {
+	if r == nil {
+		return
+	}
+
+	logger.InfoCF("web", "Web operation",
+		map[string]any{
+			"operation": operation,
+			"method":    r.Method,
+			"path":      r.URL.Path,
+		})
+}
+
+func logWebError(operation string, err error) {
+	if err == nil {
+		return
+	}
+
+	logger.ErrorCF("web", "Web operation failed",
+		map[string]any{
+			"operation": operation,
+			"error":     err.Error(),
+		})
 }

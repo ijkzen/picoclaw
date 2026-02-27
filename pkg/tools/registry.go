@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,11 +50,13 @@ func (r *ToolRegistry) ExecuteWithContext(
 	channel, chatID string,
 	asyncCallback AsyncCallback,
 ) *ToolResult {
+	argKeys := extractArgKeys(args)
 	logger.InfoCF("tool", "Tool execution started",
 		map[string]any{
-			"tool": name,
-			"args": args,
+			"tool":     name,
+			"arg_keys": argKeys,
 		})
+	logToolOperation(name, channel, chatID)
 
 	tool, ok := r.Get(name)
 	if !ok {
@@ -106,6 +109,39 @@ func (r *ToolRegistry) ExecuteWithContext(
 	}
 
 	return result
+}
+
+func extractArgKeys(args map[string]any) []string {
+	if len(args) == 0 {
+		return nil
+	}
+
+	keys := make([]string, 0, len(args))
+	for k := range args {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func logToolOperation(toolName, channel, chatID string) {
+	name := strings.TrimSpace(strings.ToLower(toolName))
+	switch name {
+	case "exec":
+		logger.InfoCF("operation", "Command line operation",
+			map[string]any{
+				"tool":    toolName,
+				"channel": channel,
+				"chat_id": chatID,
+			})
+	case "web_search", "web_fetch":
+		logger.InfoCF("operation", "Web operation",
+			map[string]any{
+				"tool":    toolName,
+				"channel": channel,
+				"chat_id": chatID,
+			})
+	}
 }
 
 // sortedToolNames returns tool names in sorted order for deterministic iteration.
