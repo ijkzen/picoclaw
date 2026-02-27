@@ -30,7 +30,17 @@
               }
             ],
             "styles": [
-              "src/styles.scss"
+              "src/styles.scss",
+              {
+                "input": "src/styles/highlight-light.scss",
+                "inject": false,
+                "bundleName": "highlight-light"
+              },
+              {
+                "input": "src/styles/highlight-dark.scss",
+                "inject": false,
+                "bundleName": "highlight-dark"
+              }
             ]
           },
           "configurations": {

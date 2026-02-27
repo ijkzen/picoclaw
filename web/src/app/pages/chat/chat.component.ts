@@ -1,15 +1,15 @@
-import { AfterViewChecked, ChangeDetectionStrategy, Component, ElementRef, ViewChild, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AfterViewChecked, ChangeDetectionStrategy, Component, ElementRef, ViewChild, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { Message } from '../../models/config.model';
 import { ApiService } from '../../services/api.service';
 import { MarkdownService } from '../../services/markdown.service';
-import { Message } from '../../models/config.model';
 
 @Component({
   selector: 'app-chat',
@@ -54,28 +54,7 @@ export class ChatComponent implements AfterViewChecked {
     message.showRawContent = !message.showRawContent;
   }
 
-  toggleReasoning(message: Message): void {
-    message.isReasoningCollapsed = !message.isReasoningCollapsed;
-  }
-
   ngAfterViewChecked(): void {
-    const message = this.messages().at(-1);
-    const scrollKey = message ? `${message.id}:${message.content.length}:${message.isStreaming ? '1' : '0'}` : 'empty';
-    if (scrollKey !== this.lastScrollKey) {
-      this.lastScrollKey = scrollKey;
-      this.scrollToBottom();
-    }
-  }
-
-  private scrollToBottom(): void {
-    try {
-      const element = this.messagesContainer?.nativeElement;
-      if (element) {
-        element.scrollTop = element.scrollHeight;
-      }
-    } catch (err) {
-      console.error('Error scrolling to bottom:', err);
-    }
   }
 
   onKeydown(event: KeyboardEvent): void {
@@ -98,7 +77,8 @@ export class ChatComponent implements AfterViewChecked {
       id: Date.now().toString(),
       role: 'user',
       content,
-      timestamp: new Date()
+      timestamp: new Date(),
+        isComplete: true
     };
 
     this.messages.update(msgs => [...msgs, userMessage]);
@@ -111,8 +91,7 @@ export class ChatComponent implements AfterViewChecked {
       role: 'assistant',
       content: '',
       timestamp: new Date(),
-      isStreaming: false,
-      isComplete: true
+      isComplete: false
     };
 
     this.messages.update(msgs => [...msgs, assistantMessage]);

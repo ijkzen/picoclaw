@@ -237,8 +237,7 @@ body {
   }
 }
 
-// Import highlight.js theme (GitHub Dark)
-@import 'highlight.js/styles/github-dark.css';
+// highlight.js theme is loaded dynamically by ThemeService at runtime
 
 // Dark theme adjustments
 .dark {

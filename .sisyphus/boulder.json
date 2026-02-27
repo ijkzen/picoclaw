@@ -1,10 +1,9 @@
 {
-  "active_plan": "/Users/ijkzen/Projects/GO-Project/picoclaw/.sisyphus/plans/fix-chat-input-alignment.md",
-  "started_at": "2026-02-27T11:32:41.490Z",
+  "active_plan": "/Users/ijkzen/Projects/GO-Project/picoclaw/.sisyphus/plans/remove-streaming-api.md",
+  "started_at": "2026-02-27T15:13:56.800Z",
   "session_ids": [
-    "ses_3612c967dffe0IcSsF0HVVQH0U"
+    "ses_360699061ffekAwwQ2nRmDS4PZ"
   ],
-  "plan_name": "fix-chat-input-alignment",
-  "agent": "atlas",
-  "worktree_path": "/Users/ijkzen/Projects/GO-Project/picoclaw"
+  "plan_name": "remove-streaming-api",
+  "agent": "atlas"
 }

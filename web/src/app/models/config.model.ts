@@ -79,9 +79,6 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
-  isStreaming?: boolean;
-  reasoning?: string;
-  isReasoningCollapsed?: boolean;
   showRawContent?: boolean;
   isComplete?: boolean;
 }

@@ -30,6 +30,7 @@ export class MarkdownService {
 
     marked.setOptions({
       renderer,
+      gfm: true,
     });
   }
 

@@ -7,6 +7,12 @@ export class ThemeService {
   private readonly THEME_KEY = 'picoclaw-theme';
   isDarkMode = signal<boolean>(false);
 
+  // Highlight.js theme management
+  private readonly HIGHLIGHT_LINK_ID = 'highlightjs-theme';
+  // Use highlight theme bundles emitted by Angular build (non-injected)
+  private readonly HIGHLIGHT_LIGHT = '/highlight-light.css';
+  private readonly HIGHLIGHT_DARK = '/highlight-dark.css';
+
   constructor() {
     this.loadTheme();
   }
@@ -20,6 +26,7 @@ export class ThemeService {
       this.isDarkMode.set(window.matchMedia('(prefers-color-scheme: dark)').matches);
     }
     this.applyTheme();
+    this.updateHighlightJsTheme();
   }
 
   toggleTheme(): void {
@@ -61,6 +68,7 @@ export class ThemeService {
     this.isDarkMode.set(isDark);
     this.applyTheme();
     localStorage.setItem(this.THEME_KEY, isDark ? 'dark' : 'light');
+    this.updateHighlightJsTheme();
   }
 
   private applyTheme(): void {
@@ -72,5 +80,26 @@ export class ThemeService {
       html.classList.remove('dark');
       document.body.classList.remove('mat-app-background');
     }
+    // keep highlight.js theme in sync with overall theme
+    this.updateHighlightJsTheme();
+  }
+
+  private updateHighlightJsTheme(): void {
+    const href = this.isDarkMode() ? this.HIGHLIGHT_DARK : this.HIGHLIGHT_LIGHT;
+    const id = this.HIGHLIGHT_LINK_ID;
+    let link = document.getElementById(id) as HTMLLinkElement | null;
+
+    if (link) {
+      if (link.getAttribute('href') !== href) {
+        link.setAttribute('href', href);
+      }
+      return;
+    }
+
+    link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = href;
+    document.head.appendChild(link);
   }
 }

@@ -27,29 +27,16 @@
     <div class="mx-auto flex w-full max-w-[900px] flex-col gap-4 pb-2">
       @for (message of messages(); track message.id) {
       <article class="flex gap-3" [class.justify-end]="message.role === 'user'">
-        <div class="flex max-w-[95%] gap-3 sm:max-w-[90%]" [class.flex-row-reverse]="message.role === 'user'">
+        <div class="flex max-w-[95%] gap-3 sm:max-w-[90%] min-w-[90%]"
+          [class.flex-row-reverse]="message.role === 'user'">
           <div
             class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--mat-sys-outline-variant)] bg-[var(--mat-sys-surface-container)]">
-            <mat-icon class="!text-[18px]">
+            <mat-icon>
               {{ message.role === 'user' ? 'person' : 'smart_toy' }}
             </mat-icon>
           </div>
 
-          <div class="min-w-0 flex-1">
-            <!-- Reasoning section (collapsible) -->
-            @if (message.reasoning) {
-            <div class="mb-2">
-              <button mat-button (click)="toggleReasoning(message)" class="text-xs">
-                <mat-icon>{{ message.isReasoningCollapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
-                思考过程
-              </button>
-              @if (!message.isReasoningCollapsed) {
-              <div class="p-2 rounded bg-[var(--mat-sys-surface-container)]">
-                <pre class="m-0 whitespace-pre-wrap text-xs opacity-80">{{ message.reasoning }}</pre>
-              </div>
-              }
-            </div>
-            }
+          <div class="w-full flex-1">
 
             <!-- Message content -->
             <div class="rounded-2xl border border-[var(--mat-sys-outline-variant)] p-3 shadow-sm"
@@ -64,8 +51,8 @@
               }
 
               <!-- Streaming indicator -->
-              @if (message.isStreaming && !message.isComplete) {
-              <mat-progress-bar mode="indeterminate" class="mt-2"></mat-progress-bar>
+              @if (!message.isComplete) {
+              <mat-progress-bar mode="indeterminate" class="mt-2 "></mat-progress-bar>
               }
             </div>
 
