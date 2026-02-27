@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/sipeed/picoclaw/pkg/cron"
 	"github.com/sipeed/picoclaw/pkg/utils"
 )
+
+const safetyGuardOutsideWorkingDirMsg = "Command blocked by safety guard (path outside working dir)"
 
 // JobExecutor is the interface for executing cron jobs through the agent
 type JobExecutor interface {
@@ -287,6 +290,9 @@ func (t *CronTool) ExecuteJob(ctx context.Context, job *cron.CronJob) string {
 		}
 
 		result := t.execTool.Execute(ctx, args)
+		if shouldSuppressScheduledCommandErrorForFeishu(channel, result) {
+			return "ok"
+		}
 		var output string
 		if result.IsError {
 			output = fmt.Sprintf("Error executing scheduled command: %s", result.ForLLM)
@@ -330,4 +336,11 @@ func (t *CronTool) ExecuteJob(ctx context.Context, job *cron.CronJob) string {
 	// Response is automatically sent via MessageBus by AgentLoop
 	_ = response // Will be sent by AgentLoop
 	return "ok"
+}
+
+func shouldSuppressScheduledCommandErrorForFeishu(channel string, result *ToolResult) bool {
+	if channel != "feishu" || result == nil || !result.IsError {
+		return false
+	}
+	return strings.Contains(result.ForLLM, safetyGuardOutsideWorkingDirMsg)
 }
