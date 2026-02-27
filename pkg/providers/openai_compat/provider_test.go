@@ -145,6 +145,45 @@ func TestProviderChat_ParsesReasoningContent(t *testing.T) {
 	}
 }
 
+func TestStripSystemParts_PreservesReasoningContentInAssistantToolCallMessages(t *testing.T) {
+	input := []Message{
+		{Role: "user", Content: "hi"},
+		{
+			Role:             "assistant",
+			Content:          "",
+			ReasoningContent: "Need to call a tool first",
+			ToolCalls: []ToolCall{
+				{
+					ID:   "call_1",
+					Type: "function",
+					Function: &FunctionCall{
+						Name:      "calculator",
+						Arguments: "{\"expr\":\"1+1\"}",
+					},
+				},
+			},
+		},
+		{Role: "tool", Content: "2", ToolCallID: "call_1"},
+	}
+
+	got := stripSystemParts(input)
+	if len(got) != len(input) {
+		t.Fatalf("len(got) = %d, want %d", len(got), len(input))
+	}
+
+	assistantMsg := got[1]
+	if assistantMsg.ReasoningContent != "Need to call a tool first" {
+		t.Fatalf(
+			"assistant reasoning_content = %q, want %q",
+			assistantMsg.ReasoningContent,
+			"Need to call a tool first",
+		)
+	}
+	if len(assistantMsg.ToolCalls) != 1 {
+		t.Fatalf("len(assistant tool calls) = %d, want 1", len(assistantMsg.ToolCalls))
+	}
+}
+
 func TestProviderChat_HTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
