@@ -16,7 +16,6 @@ func getPIDFile() string {
 	return filepath.Join(home, ".picoclaw", "gateway.pid")
 }
 
-
 func isRunning() (bool, int, error) {
 	pidFile := getPIDFile()
 	data, err := os.ReadFile(pidFile)
@@ -55,6 +54,65 @@ func signalProcess(pid int, sig os.Signal) error {
 	return process.Signal(sig)
 }
 
+func startGateway(debug bool) error {
+	// Check if already running
+	running, pid, err := isRunning()
+	if err != nil {
+		return fmt.Errorf("failed to check gateway status: %w", err)
+	}
+	if running {
+		fmt.Printf("Gateway is already running (PID: %d)\n", pid)
+		return nil
+	}
+
+	// Get the executable path
+	exe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	// Load config to get port
+	cfg, err := internal.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading config: %w", err)
+	}
+
+	// Build command arguments - use the original gateway command for foreground run
+	// but we need to run it in background
+	args := []string{"gateway", "run"}
+	if debug {
+		args = append(args, "--debug")
+	}
+
+	// Create command
+	cmd := exec.Command(exe, args...)
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	cmd.Stdin = nil
+
+	// Start the process
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start gateway: %w", err)
+	}
+
+	// Write PID file
+	pidFile := getPIDFile()
+	if err := os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0o644); err != nil {
+		// Try to kill the process if we can't write PID file
+		_ = cmd.Process.Kill()
+		return fmt.Errorf("failed to write PID file: %w", err)
+	}
+
+	fmt.Printf("✓ Gateway started in background (PID: %d)\n", cmd.Process.Pid)
+	fmt.Printf("  Listening on %s:%d\n", cfg.Gateway.Host, cfg.Gateway.Port)
+	fmt.Println("  Use 'picoclaw gateway stop' to stop")
+
+	// Detach from the child process
+	_ = cmd.Process.Release()
+
+	return nil
+}
+
 func NewStartCommand() *cobra.Command {
 	var debug bool
 
@@ -71,62 +129,7 @@ Use 'picoclaw gateway stop' to stop the background process.
   picoclaw gateway start --debug`,
 		Args: cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			// Check if already running
-			running, pid, err := isRunning()
-			if err != nil {
-				return fmt.Errorf("failed to check gateway status: %w", err)
-			}
-			if running {
-				fmt.Printf("Gateway is already running (PID: %d)\n", pid)
-				return nil
-			}
-
-			// Get the executable path
-			exe, err := os.Executable()
-			if err != nil {
-				return fmt.Errorf("failed to get executable path: %w", err)
-			}
-
-			// Load config to get port
-			cfg, err := internal.LoadConfig()
-			if err != nil {
-				return fmt.Errorf("error loading config: %w", err)
-			}
-
-			// Build command arguments - use the original gateway command for foreground run
-			// but we need to run it in background
-			args := []string{"gateway", "run"}
-			if debug {
-				args = append(args, "--debug")
-			}
-
-			// Create command
-			cmd := exec.Command(exe, args...)
-			cmd.Stdout = nil
-			cmd.Stderr = nil
-			cmd.Stdin = nil
-
-			// Start the process
-			if err := cmd.Start(); err != nil {
-				return fmt.Errorf("failed to start gateway: %w", err)
-			}
-
-			// Write PID file
-			pidFile := getPIDFile()
-			if err := os.WriteFile(pidFile, []byte(fmt.Sprintf("%d", cmd.Process.Pid)), 0o644); err != nil {
-				// Try to kill the process if we can't write PID file
-				_ = cmd.Process.Kill()
-				return fmt.Errorf("failed to write PID file: %w", err)
-			}
-
-			fmt.Printf("✓ Gateway started in background (PID: %d)\n", cmd.Process.Pid)
-			fmt.Printf("  Listening on %s:%d\n", cfg.Gateway.Host, cfg.Gateway.Port)
-			fmt.Println("  Use 'picoclaw gateway stop' to stop")
-
-			// Detach from the child process
-			_ = cmd.Process.Release()
-
-			return nil
+			return startGateway(debug)
 		},
 	}
 

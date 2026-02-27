@@ -24,7 +24,7 @@ func TestNewGatewayCommand(t *testing.T) {
 	assert.Nil(t, cmd.PersistentPreRun)
 	assert.Nil(t, cmd.PersistentPostRun)
 
-	// Should have subcommands: start, stop, status, run
+	// Should have subcommands: start, stop, restart, status, run
 	assert.True(t, cmd.HasSubCommands())
 
 	// Gateway command itself has no flags anymore
@@ -50,6 +50,18 @@ func TestNewStopCommand(t *testing.T) {
 
 	assert.Equal(t, "stop", cmd.Use)
 	assert.Equal(t, "Stop the background picoclaw gateway", cmd.Short)
+}
+
+func TestNewRestartCommand(t *testing.T) {
+	cmd := NewRestartCommand()
+
+	require.NotNil(t, cmd)
+
+	assert.Equal(t, "restart", cmd.Use)
+	assert.Equal(t, "Restart the background picoclaw gateway", cmd.Short)
+
+	assert.True(t, cmd.HasFlags())
+	assert.NotNil(t, cmd.Flags().Lookup("debug"))
 }
 
 func TestNewStatusCommand(t *testing.T) {

@@ -22,6 +22,7 @@ or 'gateway run' to run in foreground.
 	// Add subcommands
 	cmd.AddCommand(NewStartCommand())
 	cmd.AddCommand(NewStopCommand())
+	cmd.AddCommand(NewRestartCommand())
 	cmd.AddCommand(NewStatusCommand())
 	cmd.AddCommand(NewRunCommand())
 
