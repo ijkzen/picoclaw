@@ -75,12 +75,12 @@ PicoClaw is an ultra-lightweight personal AI Assistant in Go. Runs on $10 hardwa
 - **Complexity**: gocyclo max 20, gocognit max 25
 - **Function length**: max 120 lines, 40 statements
 
-### Project-Specific
-
 - **CGO disabled**: `CGO_ENABLED=0` for all builds
 - **Version injection**: Use ldflags with `internal.version`, `internal.gitCommit`
 - **Workspace path**: `~/.picoclaw/workspace` default
 - **Config path**: `~/.picoclaw/config.json`
+- **Gateway port**: `18790` (default), Web UI runs on port `18791` (gateway port + 1)
+
 
 ### File Organization
 
