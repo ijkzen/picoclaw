@@ -20,6 +20,7 @@ func TestNewAgentInstance_UsesDefaultsTemperatureAndMaxTokens(t *testing.T) {
 				Workspace:         tmpDir,
 				Model:             "test-model",
 				MaxTokens:         1234,
+				MaxTokensFallback: 5678,
 				MaxToolIterations: 5,
 			},
 		},
@@ -33,6 +34,9 @@ func TestNewAgentInstance_UsesDefaultsTemperatureAndMaxTokens(t *testing.T) {
 
 	if agent.MaxTokens != 1234 {
 		t.Fatalf("MaxTokens = %d, want %d", agent.MaxTokens, 1234)
+	}
+	if agent.MaxTokensFallback != 5678 {
+		t.Fatalf("MaxTokensFallback = %d, want %d", agent.MaxTokensFallback, 5678)
 	}
 	if agent.Temperature != 1.0 {
 		t.Fatalf("Temperature = %f, want %f", agent.Temperature, 1.0)

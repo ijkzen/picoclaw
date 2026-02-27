@@ -23,19 +23,21 @@ type SubagentTask struct {
 }
 
 type SubagentManager struct {
-	tasks          map[string]*SubagentTask
-	mu             sync.RWMutex
-	provider       providers.LLMProvider
-	defaultModel   string
-	bus            *bus.MessageBus
-	workspace      string
-	tools          *ToolRegistry
-	maxIterations  int
-	maxTokens      int
-	temperature    float64
-	hasMaxTokens   bool
-	hasTemperature bool
-	nextID         int
+	tasks                map[string]*SubagentTask
+	mu                   sync.RWMutex
+	provider             providers.LLMProvider
+	defaultModel         string
+	bus                  *bus.MessageBus
+	workspace            string
+	tools                *ToolRegistry
+	maxIterations        int
+	maxTokens            int
+	maxTokensFallback    int
+	temperature          float64
+	hasMaxTokens         bool
+	hasMaxTokensFallback bool
+	hasTemperature       bool
+	nextID               int
 }
 
 func NewSubagentManager(
@@ -55,12 +57,14 @@ func NewSubagentManager(
 	}
 }
 
-// SetLLMOptions sets max tokens and temperature for subagent LLM calls.
-func (sm *SubagentManager) SetLLMOptions(maxTokens int, temperature float64) {
+// SetLLMOptions sets max tokens, max tokens fallback and temperature for subagent LLM calls.
+func (sm *SubagentManager) SetLLMOptions(maxTokens, maxTokensFallback int, temperature float64) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 	sm.maxTokens = maxTokens
 	sm.hasMaxTokens = true
+	sm.maxTokensFallback = maxTokensFallback
+	sm.hasMaxTokensFallback = true
 	sm.temperature = temperature
 	sm.hasTemperature = true
 }
@@ -148,8 +152,10 @@ After completing the task, provide a clear summary of what was done.`
 	tools := sm.tools
 	maxIter := sm.maxIterations
 	maxTokens := sm.maxTokens
+	maxTokensFallback := sm.maxTokensFallback
 	temperature := sm.temperature
 	hasMaxTokens := sm.hasMaxTokens
+	hasMaxTokensFallback := sm.hasMaxTokensFallback
 	hasTemperature := sm.hasTemperature
 	sm.mu.RUnlock()
 
@@ -164,12 +170,18 @@ After completing the task, provide a clear summary of what was done.`
 		}
 	}
 
+	toolLoopMaxTokensFallback := 0
+	if hasMaxTokensFallback {
+		toolLoopMaxTokensFallback = maxTokensFallback
+	}
+
 	loopResult, err := RunToolLoop(ctx, ToolLoopConfig{
-		Provider:      sm.provider,
-		Model:         sm.defaultModel,
-		Tools:         tools,
-		MaxIterations: maxIter,
-		LLMOptions:    llmOptions,
+		Provider:          sm.provider,
+		Model:             sm.defaultModel,
+		Tools:             tools,
+		MaxIterations:     maxIter,
+		MaxTokensFallback: toolLoopMaxTokensFallback,
+		LLMOptions:        llmOptions,
 	}, messages, task.OriginChannel, task.OriginChatID)
 
 	sm.mu.Lock()
@@ -323,8 +335,10 @@ func (t *SubagentTool) Execute(ctx context.Context, args map[string]any) *ToolRe
 	tools := sm.tools
 	maxIter := sm.maxIterations
 	maxTokens := sm.maxTokens
+	maxTokensFallback := sm.maxTokensFallback
 	temperature := sm.temperature
 	hasMaxTokens := sm.hasMaxTokens
+	hasMaxTokensFallback := sm.hasMaxTokensFallback
 	hasTemperature := sm.hasTemperature
 	sm.mu.RUnlock()
 
@@ -339,12 +353,18 @@ func (t *SubagentTool) Execute(ctx context.Context, args map[string]any) *ToolRe
 		}
 	}
 
+	toolLoopMaxTokensFallback := 0
+	if hasMaxTokensFallback {
+		toolLoopMaxTokensFallback = maxTokensFallback
+	}
+
 	loopResult, err := RunToolLoop(ctx, ToolLoopConfig{
-		Provider:      sm.provider,
-		Model:         sm.defaultModel,
-		Tools:         tools,
-		MaxIterations: maxIter,
-		LLMOptions:    llmOptions,
+		Provider:          sm.provider,
+		Model:             sm.defaultModel,
+		Tools:             tools,
+		MaxIterations:     maxIter,
+		MaxTokensFallback: toolLoopMaxTokensFallback,
+		LLMOptions:        llmOptions,
 	}, messages, t.originChannel, t.originChatID)
 	if err != nil {
 		return ErrorResult(fmt.Sprintf("Subagent execution failed: %v", err)).WithError(err)

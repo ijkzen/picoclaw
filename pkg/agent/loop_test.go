@@ -550,6 +550,34 @@ func (m *failFirstMockProvider) GetDefaultModel() string {
 	return "mock-fail-model"
 }
 
+type maxTokensFallbackMockProvider struct {
+	currentCall int
+	maxTokens   []int
+}
+
+func (m *maxTokensFallbackMockProvider) Chat(
+	ctx context.Context,
+	messages []providers.Message,
+	tools []providers.ToolDefinition,
+	model string,
+	opts map[string]any,
+) (*providers.LLMResponse, error) {
+	m.currentCall++
+	mt, _ := opts["max_tokens"].(int)
+	m.maxTokens = append(m.maxTokens, mt)
+	if mt > 8192 {
+		return nil, fmt.Errorf("invalid_request_error: max_tokens must be between 1 and 8192")
+	}
+	return &providers.LLMResponse{
+		Content:   "Recovered from max_tokens fallback",
+		ToolCalls: []providers.ToolCall{},
+	}, nil
+}
+
+func (m *maxTokensFallbackMockProvider) GetDefaultModel() string {
+	return "mock-fallback-model"
+}
+
 // TestAgentLoop_ContextExhaustionRetry verify that the agent retries on context errors
 func TestAgentLoop_ContextExhaustionRetry(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "agent-test-*")
@@ -629,5 +657,52 @@ func TestAgentLoop_ContextExhaustionRetry(t *testing.T) {
 	// Without compression: 6 + 1 (new user msg) + 1 (assistant msg) = 8
 	if len(finalHistory) >= 8 {
 		t.Errorf("Expected history to be compressed (len < 8), got %d", len(finalHistory))
+	}
+}
+
+func TestAgentLoop_MaxTokensFallbackRetry(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "agent-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	cfg := &config.Config{
+		Agents: config.AgentsConfig{
+			Defaults: config.AgentDefaults{
+				Workspace:         tmpDir,
+				Model:             "test-model",
+				MaxTokens:         20000,
+				MaxTokensFallback: 8192,
+				MaxToolIterations: 10,
+			},
+		},
+	}
+
+	msgBus := bus.NewMessageBus()
+	provider := &maxTokensFallbackMockProvider{}
+	al := NewAgentLoop(cfg, msgBus, provider)
+
+	response, err := al.ProcessDirectWithChannel(
+		context.Background(),
+		"Trigger message",
+		"test-session-max-tokens",
+		"test",
+		"test-chat",
+	)
+	if err != nil {
+		t.Fatalf("Expected success after max_tokens fallback, got error: %v", err)
+	}
+
+	if response != "Recovered from max_tokens fallback" {
+		t.Errorf("Expected 'Recovered from max_tokens fallback', got '%s'", response)
+	}
+
+	if provider.currentCall != 2 {
+		t.Errorf("Expected 2 calls (1 fail + 1 fallback), got %d", provider.currentCall)
+	}
+
+	if len(provider.maxTokens) != 2 || provider.maxTokens[0] != 20000 || provider.maxTokens[1] != 8192 {
+		t.Errorf("max_tokens calls = %v, want [20000 8192]", provider.maxTokens)
 	}
 }

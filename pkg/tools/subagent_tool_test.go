@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -48,7 +49,7 @@ func (m *MockLLMProvider) GetContextWindow() int {
 func TestSubagentManager_SetLLMOptions_AppliesToRunToolLoop(t *testing.T) {
 	provider := &MockLLMProvider{}
 	manager := NewSubagentManager(provider, "test-model", "/tmp/test", nil)
-	manager.SetLLMOptions(2048, 0.6)
+	manager.SetLLMOptions(2048, 4096, 0.6)
 	tool := NewSubagentTool(manager)
 	tool.SetContext("cli", "direct")
 
@@ -68,6 +69,52 @@ func TestSubagentManager_SetLLMOptions_AppliesToRunToolLoop(t *testing.T) {
 	}
 	if provider.lastOptions["temperature"] != 0.6 {
 		t.Fatalf("temperature = %v, want %v", provider.lastOptions["temperature"], 0.6)
+	}
+}
+
+type maxTokensFallbackProvider struct {
+	calls []int
+}
+
+func (m *maxTokensFallbackProvider) Chat(
+	ctx context.Context,
+	messages []providers.Message,
+	tools []providers.ToolDefinition,
+	model string,
+	options map[string]any,
+) (*providers.LLMResponse, error) {
+	maxTokens, _ := options["max_tokens"].(int)
+	m.calls = append(m.calls, maxTokens)
+	if maxTokens > 2048 {
+		return nil, fmt.Errorf("invalid_request_error: max_tokens must be between 1 and 2048")
+	}
+
+	return &providers.LLMResponse{
+		Content: "Task completed with fallback",
+	}, nil
+}
+
+func (m *maxTokensFallbackProvider) GetDefaultModel() string {
+	return "test-model"
+}
+
+func TestSubagentManager_MaxTokensFallbackRetry(t *testing.T) {
+	provider := &maxTokensFallbackProvider{}
+	manager := NewSubagentManager(provider, "test-model", "/tmp/test", nil)
+	manager.SetLLMOptions(4096, 2048, 0.6)
+	tool := NewSubagentTool(manager)
+	tool.SetContext("cli", "direct")
+
+	result := tool.Execute(context.Background(), map[string]any{"task": "Fallback test"})
+	if result == nil || result.IsError {
+		t.Fatalf("expected successful result, got: %+v", result)
+	}
+
+	if len(provider.calls) != 2 {
+		t.Fatalf("expected 2 calls, got %d", len(provider.calls))
+	}
+	if provider.calls[0] != 4096 || provider.calls[1] != 2048 {
+		t.Fatalf("calls = %v, want [4096 2048]", provider.calls)
 	}
 }
 

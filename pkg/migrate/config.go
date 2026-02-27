@@ -82,6 +82,9 @@ func ConvertConfig(data map[string]any) (*config.Config, []string, error) {
 			if v, ok := getFloat(defaults, "max_tokens"); ok {
 				cfg.Agents.Defaults.MaxTokens = int(v)
 			}
+			if v, ok := getFloat(defaults, "max_tokens_fallback"); ok {
+				cfg.Agents.Defaults.MaxTokensFallback = int(v)
+			}
 			if v, ok := getFloat(defaults, "temperature"); ok {
 				cfg.Agents.Defaults.Temperature = &v
 			}

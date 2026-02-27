@@ -144,7 +144,7 @@ func registerSharedTools(
 
 		// Spawn tool with allowlist checker
 		subagentManager := tools.NewSubagentManager(provider, agent.Model, agent.Workspace, msgBus)
-		subagentManager.SetLLMOptions(agent.MaxTokens, agent.Temperature)
+		subagentManager.SetLLMOptions(agent.MaxTokens, agent.MaxTokensFallback, agent.Temperature)
 		spawnTool := tools.NewSpawnTool(subagentManager)
 		currentAgentID := agentID
 		spawnTool.SetAllowlistChecker(func(targetAgentID string) bool {
@@ -512,15 +512,24 @@ func (al *AgentLoop) runLLMIteration(
 		var response *providers.LLMResponse
 		var err error
 
-		callLLM := func() (*providers.LLMResponse, error) {
+		callLLM := func(maxTokens int) (*providers.LLMResponse, error) {
+			baseOptions := map[string]any{
+				"max_tokens":       maxTokens,
+				"temperature":      agent.Temperature,
+				"prompt_cache_key": agent.ID,
+			}
+
 			if len(agent.Candidates) > 1 && al.fallback != nil {
 				fbResult, fbErr := al.fallback.Execute(ctx, agent.Candidates,
 					func(ctx context.Context, provider, model string) (*providers.LLMResponse, error) {
-						return agent.Provider.Chat(ctx, messages, providerToolDefs, model, map[string]any{
-							"max_tokens":       agent.MaxTokens,
-							"temperature":      agent.Temperature,
-							"prompt_cache_key": agent.ID,
-						})
+						return al.callProviderWithMaxTokensFallback(
+							ctx,
+							agent,
+							messages,
+							providerToolDefs,
+							model,
+							baseOptions,
+						)
 					},
 				)
 				if fbErr != nil {
@@ -533,17 +542,21 @@ func (al *AgentLoop) runLLMIteration(
 				}
 				return fbResult.Response, nil
 			}
-			return agent.Provider.Chat(ctx, messages, providerToolDefs, agent.Model, map[string]any{
-				"max_tokens":       agent.MaxTokens,
-				"temperature":      agent.Temperature,
-				"prompt_cache_key": agent.ID,
-			})
+			return al.callProviderWithMaxTokensFallback(
+				ctx,
+				agent,
+				messages,
+				providerToolDefs,
+				agent.Model,
+				baseOptions,
+			)
 		}
 
 		// Retry loop for context/token errors
 		maxRetries := 2
+		currentMaxTokens := agent.MaxTokens
 		for retry := 0; retry <= maxRetries; retry++ {
-			response, err = callLLM()
+			response, err = callLLM(currentMaxTokens)
 			if err == nil {
 				break
 			}
@@ -720,6 +733,85 @@ func (al *AgentLoop) runLLMIteration(
 	}
 
 	return finalContent, iteration, nil
+}
+
+func (al *AgentLoop) callProviderWithMaxTokensFallback(
+	ctx context.Context,
+	agent *AgentInstance,
+	messages []providers.Message,
+	toolsDefs []providers.ToolDefinition,
+	model string,
+	baseOptions map[string]any,
+) (*providers.LLMResponse, error) {
+	options := cloneLLMOptions(baseOptions)
+
+	response, err := agent.Provider.Chat(ctx, messages, toolsDefs, model, options)
+	if err == nil {
+		return response, nil
+	}
+
+	if !providers.IsMaxTokensOutOfRangeError(err) || agent.MaxTokensFallback <= 0 {
+		return nil, err
+	}
+
+	maxTokens, ok := llmOptionAsInt(options["max_tokens"])
+	if !ok || maxTokens == agent.MaxTokensFallback {
+		return nil, err
+	}
+
+	options["max_tokens"] = agent.MaxTokensFallback
+	logger.WarnCF("agent", "max_tokens out of range, retrying with fallback", map[string]any{
+		"agent_id":            agent.ID,
+		"model":               model,
+		"max_tokens":          maxTokens,
+		"max_tokens_fallback": agent.MaxTokensFallback,
+		"original_error":      err.Error(),
+	})
+
+	return agent.Provider.Chat(ctx, messages, toolsDefs, model, options)
+}
+
+func cloneLLMOptions(options map[string]any) map[string]any {
+	if options == nil {
+		return map[string]any{}
+	}
+
+	dup := make(map[string]any, len(options))
+	for k, v := range options {
+		dup[k] = v
+	}
+	return dup
+}
+
+func llmOptionAsInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case int8:
+		return int(n), true
+	case int16:
+		return int(n), true
+	case int32:
+		return int(n), true
+	case int64:
+		return int(n), true
+	case uint:
+		return int(n), true
+	case uint8:
+		return int(n), true
+	case uint16:
+		return int(n), true
+	case uint32:
+		return int(n), true
+	case uint64:
+		return int(n), true
+	case float32:
+		return int(n), true
+	case float64:
+		return int(n), true
+	default:
+		return 0, false
+	}
 }
 
 func (al *AgentLoop) logConversationStart(agent *AgentInstance, sessionKey, channel, chatID string) {
@@ -977,8 +1069,9 @@ func (al *AgentLoop) summarizeSession(agent *AgentInstance, sessionKey string) {
 			s1,
 			s2,
 		)
-		resp, err := agent.Provider.Chat(
+		resp, err := al.callProviderWithMaxTokensFallback(
 			ctx,
+			agent,
 			[]providers.Message{{Role: "user", Content: mergePrompt}},
 			nil,
 			agent.Model,
@@ -1028,8 +1121,9 @@ func (al *AgentLoop) summarizeBatch(
 	}
 	prompt := sb.String()
 
-	response, err := agent.Provider.Chat(
+	response, err := al.callProviderWithMaxTokensFallback(
 		ctx,
+		agent,
 		[]providers.Message{{Role: "user", Content: prompt}},
 		nil,
 		agent.Model,

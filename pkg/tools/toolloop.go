@@ -17,11 +17,12 @@ import (
 
 // ToolLoopConfig configures the tool execution loop.
 type ToolLoopConfig struct {
-	Provider      providers.LLMProvider
-	Model         string
-	Tools         *ToolRegistry
-	MaxIterations int
-	LLMOptions    map[string]any
+	Provider          providers.LLMProvider
+	Model             string
+	Tools             *ToolRegistry
+	MaxIterations     int
+	MaxTokensFallback int
+	LLMOptions        map[string]any
 }
 
 // ToolLoopResult contains the result of running the tool loop.
@@ -62,7 +63,15 @@ func RunToolLoop(
 			llmOpts = map[string]any{}
 		}
 		// 3. Call LLM
-		response, err := config.Provider.Chat(ctx, messages, providerToolDefs, config.Model, llmOpts)
+		response, err := callWithMaxTokensFallback(
+			ctx,
+			config.Provider,
+			messages,
+			providerToolDefs,
+			config.Model,
+			llmOpts,
+			config.MaxTokensFallback,
+		)
 		if err != nil {
 			logger.ErrorCF("toolloop", "LLM call failed",
 				map[string]any{
@@ -157,4 +166,82 @@ func RunToolLoop(
 		Content:    finalContent,
 		Iterations: iteration,
 	}, nil
+}
+
+func callWithMaxTokensFallback(
+	ctx context.Context,
+	provider providers.LLMProvider,
+	messages []providers.Message,
+	tools []providers.ToolDefinition,
+	model string,
+	options map[string]any,
+	maxTokensFallback int,
+) (*providers.LLMResponse, error) {
+	response, err := provider.Chat(ctx, messages, tools, model, options)
+	if err == nil {
+		return response, nil
+	}
+
+	if maxTokensFallback <= 0 || !providers.IsMaxTokensOutOfRangeError(err) {
+		return nil, err
+	}
+
+	maxTokens, ok := asInt(options["max_tokens"])
+	if !ok || maxTokens == maxTokensFallback {
+		return nil, err
+	}
+
+	retryOptions := cloneOptions(options)
+	retryOptions["max_tokens"] = maxTokensFallback
+
+	logger.WarnCF("toolloop", "max_tokens out of range, retrying with fallback",
+		map[string]any{
+			"model":               model,
+			"max_tokens":          maxTokens,
+			"max_tokens_fallback": maxTokensFallback,
+		})
+
+	return provider.Chat(ctx, messages, tools, model, retryOptions)
+}
+
+func cloneOptions(options map[string]any) map[string]any {
+	if options == nil {
+		return map[string]any{}
+	}
+	dup := make(map[string]any, len(options))
+	for k, v := range options {
+		dup[k] = v
+	}
+	return dup
+}
+
+func asInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case int8:
+		return int(n), true
+	case int16:
+		return int(n), true
+	case int32:
+		return int(n), true
+	case int64:
+		return int(n), true
+	case uint:
+		return int(n), true
+	case uint8:
+		return int(n), true
+	case uint16:
+		return int(n), true
+	case uint32:
+		return int(n), true
+	case uint64:
+		return int(n), true
+	case float32:
+		return int(n), true
+	case float64:
+		return int(n), true
+	default:
+		return 0, false
+	}
 }
