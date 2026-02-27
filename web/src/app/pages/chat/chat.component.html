@@ -24,10 +24,10 @@
       </div>
     </section>
     } @else {
-    <div class="mx-auto flex w-full max-w-[760px] flex-col gap-4 pb-2">
+    <div class="mx-auto flex w-full max-w-[900px] flex-col gap-4 pb-2">
       @for (message of messages(); track message.id) {
       <article class="flex gap-3" [class.justify-end]="message.role === 'user'">
-        <div class="flex max-w-[90%] gap-3 sm:max-w-[80%]" [class.flex-row-reverse]="message.role === 'user'">
+        <div class="flex max-w-[95%] gap-3 sm:max-w-[90%]" [class.flex-row-reverse]="message.role === 'user'">
           <div
             class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--mat-sys-outline-variant)] bg-[var(--mat-sys-surface-container)]">
             <mat-icon class="!text-[18px]">
@@ -83,13 +83,6 @@
           </div>
         </div>
       </article>
-      }
-
-      @if (isLoading()) {
-      <div class="flex items-center gap-2 px-1 text-sm text-[var(--mat-sys-on-surface-variant)]">
-        <mat-spinner diameter="18"></mat-spinner>
-        <span>PicoClaw is thinking...</span>
-      </div>
       }
     </div>
     }

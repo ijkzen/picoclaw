@@ -105,69 +105,41 @@ export class ChatComponent implements AfterViewChecked {
     this.inputMessage.set('');
     this.isLoading.set(true);
 
-    let fullResponse = '';
+    // For non-streaming API: initialize assistant message as complete (not streaming)
     const assistantMessage: Message = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
       content: '',
       timestamp: new Date(),
-      isStreaming: true,
-      isComplete: false
+      isStreaming: false,
+      isComplete: true
     };
 
     this.messages.update(msgs => [...msgs, assistantMessage]);
 
-    this.apiService.streamMessage(content).subscribe({
-      next: (chunk) => {
-        fullResponse += chunk;
+    // sendMessage returns a single response object: { response: string }
+    this.apiService.sendMessage(content).subscribe({
+      next: (response: any) => {
+        const text = response?.response ?? 'No response';
         this.messages.update(msgs => {
           const lastMsg = msgs[msgs.length - 1];
           if (lastMsg.role === 'assistant') {
             return [
               ...msgs.slice(0, -1),
-              { ...lastMsg, content: fullResponse }
+              { ...lastMsg, content: text, isStreaming: false, isComplete: true }
             ];
           }
           return msgs;
         });
+        this.isLoading.set(false);
       },
-      error: () => {
-        this.apiService.sendMessage(content).subscribe({
-          next: (response) => {
-            this.messages.update(msgs => {
-              const lastMsg = msgs[msgs.length - 1];
-              if (lastMsg.role === 'assistant') {
-                return [
-                  ...msgs.slice(0, -1),
-                  { ...lastMsg, content: response.response || 'No response', isStreaming: false }
-                ];
-              }
-              return msgs;
-            });
-            this.isLoading.set(false);
-          },
-          error: (error) => {
-            this.messages.update(msgs => {
-              const lastMsg = msgs[msgs.length - 1];
-              if (lastMsg.role === 'assistant') {
-                return [
-                  ...msgs.slice(0, -1),
-                  { ...lastMsg, content: `Error: ${error.message}`, isStreaming: false }
-                ];
-              }
-              return msgs;
-            });
-            this.isLoading.set(false);
-          }
-        });
-      },
-      complete: () => {
+      error: (error: any) => {
         this.messages.update(msgs => {
           const lastMsg = msgs[msgs.length - 1];
           if (lastMsg.role === 'assistant') {
             return [
               ...msgs.slice(0, -1),
-              { ...lastMsg, isStreaming: false, isComplete: true }
+              { ...lastMsg, content: `Error: ${error?.message ?? String(error)}`, isStreaming: false, isComplete: true }
             ];
           }
           return msgs;

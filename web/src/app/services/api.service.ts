@@ -55,40 +55,6 @@ export class ApiService {
     });
   }
 
-  // Streaming chat with EventSource
-  streamMessage(content: string, sessionKey: string = 'web:default'): Observable<string> {
-    return new Observable(observer => {
-      const eventSource = new EventSource(
-        `${this.apiUrl}/chat/stream?content=${encodeURIComponent(content)}&session_key=${encodeURIComponent(sessionKey)}`
-      );
-
-eventSource.onmessage = (event) => {
-if (event.data === '[DONE]') {
-eventSource.close();
-observer.complete();
-        } else {
-          // Parse JSON-encoded chunk to handle newlines properly
-          try {
-            const decoded = JSON.parse(event.data);
-            observer.next(decoded);
-          } catch {
-            // Fallback for non-JSON data
-observer.next(event.data);
-        }
-        }
-};
-
-      eventSource.onerror = (error) => {
-        eventSource.close();
-        observer.error(error);
-      };
-
-      return () => {
-        eventSource.close();
-      };
-    });
-  }
-
   // Status
   getStatus(): Observable<any> {
     return this.http.get(`${this.apiUrl}/status`);

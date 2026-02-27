@@ -38,7 +38,6 @@ func NewServer(host string, port int, cfg *config.Config, agentLoop *agent.Agent
 	mux.HandleFunc("/api/models", s.handleModels)
 	mux.HandleFunc("/api/models/default", s.handleDefaultModel)
 	mux.HandleFunc("/api/chat", s.handleChat)
-	mux.HandleFunc("/api/chat/stream", s.handleChatStream)
 	mux.HandleFunc("/api/status", s.handleStatus)
 	mux.HandleFunc("/api/gateway/restart", s.handleGatewayRestart)
 
@@ -210,43 +209,6 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"response": response})
 }
 
-func (s *Server) handleChatStream(w http.ResponseWriter, r *http.Request) {
-	logWebOperation(r, "chat_stream")
-
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	content := r.URL.Query().Get("content")
-	sessionKey := r.URL.Query().Get("session_key")
-	if sessionKey == "" {
-		sessionKey = "web:default"
-	}
-
-	ctx := context.Background()
-	response, err := s.agentLoop.ProcessDirectWithChannel(ctx, content, sessionKey, "web", "default")
-	if err != nil {
-		logWebError("chat_stream_process_failed", err)
-		fmt.Fprintf(w, "data: Error: %s\n\n", err.Error())
-		fmt.Fprintf(w, "data: [DONE]\n\n")
-		return
-	}
-
-	chunks := splitIntoChunks(response, 10)
-	for _, chunk := range chunks {
-		// Encode chunk as JSON to properly handle newlines in SSE
-		jsonChunk, _ := json.Marshal(chunk)
-		fmt.Fprintf(w, "data: %s\n\n", jsonChunk)
-	}
-	fmt.Fprintf(w, "data: [DONE]\n\n")
-}
-
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	logWebOperation(r, "status")
 
@@ -335,20 +297,6 @@ func getContentType(ext string) string {
 		return "application/octet-stream"
 	}
 }
-
-func splitIntoChunks(s string, chunkSize int) []string {
-	var chunks []string
-	runes := []rune(s)
-	for i := 0; i < len(runes); i += chunkSize {
-		end := i + chunkSize
-		if end > len(runes) {
-			end = len(runes)
-		}
-		chunks = append(chunks, string(runes[i:end]))
-	}
-	return chunks
-}
-
 func logWebOperation(r *http.Request, operation string) {
 	if r == nil {
 		return
