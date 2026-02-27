@@ -77,7 +77,7 @@ func authLoginOpenAI(useDeviceCode bool) error {
 		// Update default model to use OpenAI
 		appCfg.Agents.Defaults.ModelName = "gpt-5.2"
 
-		if err = config.SaveConfig(internal.GetConfigPath(), appCfg); err != nil {
+		if err = internal.SaveConfigAndRestart(appCfg); err != nil {
 			return fmt.Errorf("could not update config: %w", err)
 		}
 	}
@@ -151,7 +151,7 @@ func authLoginGoogleAntigravity() error {
 		// Update default model
 		appCfg.Agents.Defaults.ModelName = "gemini-flash"
 
-		if err := config.SaveConfig(internal.GetConfigPath(), appCfg); err != nil {
+		if err := internal.SaveConfigAndRestart(appCfg); err != nil {
 			fmt.Printf("Warning: could not update config: %v\n", err)
 		}
 	}
@@ -245,7 +245,7 @@ func authLoginPasteToken(provider string) error {
 			// Update default model
 			appCfg.Agents.Defaults.ModelName = "gpt-5.2"
 		}
-		if err := config.SaveConfig(internal.GetConfigPath(), appCfg); err != nil {
+		if err := internal.SaveConfigAndRestart(appCfg); err != nil {
 			return fmt.Errorf("could not update config: %w", err)
 		}
 	}
@@ -293,7 +293,7 @@ func authLogoutCmd(provider string) error {
 			case "google-antigravity", "antigravity":
 				appCfg.Providers.Antigravity.AuthMethod = ""
 			}
-			config.SaveConfig(internal.GetConfigPath(), appCfg)
+			_ = internal.SaveConfigAndRestart(appCfg)
 		}
 
 		fmt.Printf("Logged out from %s\n", provider)
@@ -315,7 +315,7 @@ func authLogoutCmd(provider string) error {
 		appCfg.Providers.OpenAI.AuthMethod = ""
 		appCfg.Providers.Anthropic.AuthMethod = ""
 		appCfg.Providers.Antigravity.AuthMethod = ""
-		config.SaveConfig(internal.GetConfigPath(), appCfg)
+		_ = internal.SaveConfigAndRestart(appCfg)
 	}
 
 	fmt.Println("Logged out from all providers")

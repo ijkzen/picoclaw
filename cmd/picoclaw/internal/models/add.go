@@ -170,7 +170,7 @@ func (m addModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, tea.Quit
 				}
 				cfg.ModelList = append(cfg.ModelList, mc)
-				if err := config.SaveConfig(internal.GetConfigPath(), cfg); err != nil {
+				if err := internal.SaveConfigAndRestart(cfg); err != nil {
 					m.err = err
 					return m, tea.Quit
 				}
@@ -242,4 +242,3 @@ func NewAddCommand() *cobra.Command {
 	}
 	return cmd
 }
-

@@ -45,7 +45,7 @@ func (m listModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Quit
 			}
 			m.cfg.Agents.Defaults.ModelName = name
-			if err := config.SaveConfig(internal.GetConfigPath(), m.cfg); err != nil {
+			if err := internal.SaveConfigAndRestart(m.cfg); err != nil {
 				m.err = err
 			}
 			return m, tea.Quit
@@ -110,8 +110,7 @@ func NewListCommand() *cobra.Command {
 				fmt.Println("tui error:", err)
 				return
 			}
-	},
+		},
 	}
 	return cmd
 }
-

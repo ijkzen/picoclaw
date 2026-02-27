@@ -179,7 +179,7 @@ func (m editModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 				m.cfg.ModelList[m.index] = m.mc
-				if err := config.SaveConfig(internal.GetConfigPath(), m.cfg); err != nil {
+				if err := internal.SaveConfigAndRestart(m.cfg); err != nil {
 					m.errMsg = fmt.Sprintf("failed to save: %v", err)
 					return m, nil
 				}

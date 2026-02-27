@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/sipeed/picoclaw/cmd/picoclaw/internal"
 	"github.com/sipeed/picoclaw/pkg/config"
 )
 
@@ -270,7 +271,7 @@ func (m *Model) RefreshChannelStatus() {
 
 // SaveConfig saves the current configuration to file
 func (m *Model) SaveConfig() error {
-	return config.SaveConfig(m.ConfigPath, m.Config)
+	return internal.SaveConfigPathAndRestart(m.ConfigPath, m.Config)
 }
 
 // GetFieldValue retrieves a field value by name

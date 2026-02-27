@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -14,6 +14,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
+import { Subscription, catchError, map, of, switchMap, timer } from 'rxjs';
 import { Config, ModelConfig } from '../../models/config.model';
 import { ApiService } from '../../services/api.service';
 
@@ -44,13 +45,13 @@ import { ApiService } from '../../services/api.service';
           <mat-card-title>Settings</mat-card-title>
           <mat-card-subtitle>Configure your PicoClaw instance</mat-card-subtitle>
         </mat-card-header>
-        <mat-card-actions align="end">
-          <button mat-raised-button color="primary" (click)="saveConfig()" [disabled]="isSaving()">
-            <mat-icon>save</mat-icon>
-            {{ isSaving() ? 'Saving...' : 'Save Changes' }}
-          </button>
-        </mat-card-actions>
-      </mat-card>
+          <mat-card-actions align="end">
+	          <button mat-raised-button color="primary" (click)="saveConfig()" [disabled]="isSaving() || isRestarting()">
+	            <mat-icon>save</mat-icon>
+	            {{ isSaving() ? 'Saving...' : (isRestarting() ? 'Restarting Gateway...' : 'Save Changes') }}
+	          </button>
+	        </mat-card-actions>
+	      </mat-card>
 
       @if (isLoading()) {
         <div class="loading-container">
@@ -357,23 +358,34 @@ import { ApiService } from '../../services/api.service';
               </mat-card>
             </div>
           </mat-tab>
-        </mat-tab-group>
-      }
-    </div>
-  `,
+	        </mat-tab-group>
+	      }
+
+        @if (isRestarting()) {
+          <div class="restart-overlay">
+            <div class="restart-dialog">
+              <mat-spinner diameter="48"></mat-spinner>
+              <div class="restart-title">Applying Configuration</div>
+              <div class="restart-subtitle">Restarting gateway, please wait...</div>
+            </div>
+          </div>
+        }
+	    </div>
+	  `,
   styles: [`
     :host {
       display: block;
     }
 
-    .settings-container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      height: calc(100vh - 120px);
-    }
+	    .settings-container {
+	      max-width: 900px;
+	      margin: 0 auto;
+	      padding: 16px;
+	      display: flex;
+	      flex-direction: column;
+	      height: calc(100vh - 120px);
+        position: relative;
+	    }
 
     mat-tab-group {
       display: flex;
@@ -403,17 +415,52 @@ import { ApiService } from '../../services/api.service';
       margin: 0 16px 12px 16px;
     }
 
-    mat-accordion {
-      display: block;
-      margin-top: 16px;
-    }
-  `]
+	    mat-accordion {
+	      display: block;
+	      margin-top: 16px;
+	    }
+
+      .restart-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .restart-dialog {
+        background: var(--mat-sys-surface);
+        border: 1px solid var(--mat-sys-outline-variant);
+        border-radius: 16px;
+        min-width: 280px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .restart-title {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .restart-subtitle {
+        font-size: 14px;
+        opacity: 0.85;
+      }
+	  `]
 })
-export class SettingsComponent implements OnInit {
+export class SettingsComponent implements OnInit, OnDestroy {
   config = signal<Config | null>(null);
   isLoading = signal(true);
   isSaving = signal(false);
+  isRestarting = signal(false);
   defaultModel = signal('');
+  private restartPollSub?: Subscription;
 
   // Tools state
   webProviders = {
@@ -572,6 +619,10 @@ export class SettingsComponent implements OnInit {
     this.loadConfig();
   }
 
+  ngOnDestroy(): void {
+    this.restartPollSub?.unsubscribe();
+  }
+
   loadConfig(): void {
     this.apiService.getConfig().subscribe({
       next: (config) => {
@@ -646,13 +697,56 @@ export class SettingsComponent implements OnInit {
     this.isSaving.set(true);
     this.apiService.saveConfig(config).subscribe({
       next: () => {
-        this.snackBar.open('Configuration saved successfully', 'Close', { duration: 3000 });
         this.isSaving.set(false);
+        this.restartGatewayAndWait();
       },
       error: (error) => {
         console.error('Failed to save config:', error);
         this.snackBar.open('Failed to save configuration', 'Close', { duration: 3000 });
         this.isSaving.set(false);
+      }
+    });
+  }
+
+  private restartGatewayAndWait(): void {
+    this.isRestarting.set(true);
+
+    const startPolling = () => this.pollGatewayReady();
+    this.apiService.restartGateway().subscribe({
+      next: () => startPolling(),
+      error: (error) => {
+        // Restart may start before this request returns; continue by polling.
+        console.warn('Gateway restart request interrupted, polling status:', error);
+        startPolling();
+      }
+    });
+  }
+
+  private pollGatewayReady(): void {
+    const maxAttempts = 80;
+    let attempts = 0;
+
+    this.restartPollSub?.unsubscribe();
+    this.restartPollSub = timer(2000, 1500).pipe(
+      map(() => ++attempts),
+      switchMap((attempt) =>
+        this.apiService.getStatus().pipe(
+          map(() => ({ attempt, ok: true })),
+          catchError(() => of({ attempt, ok: false }))
+        )
+      )
+    ).subscribe(({ attempt, ok }) => {
+      if (ok) {
+        this.restartPollSub?.unsubscribe();
+        this.isRestarting.set(false);
+        this.snackBar.open('Configuration updated successfully', 'Close', { duration: 3000 });
+        return;
+      }
+
+      if (attempt >= maxAttempts) {
+        this.restartPollSub?.unsubscribe();
+        this.isRestarting.set(false);
+        this.snackBar.open('Config saved, but gateway restart timed out', 'Close', { duration: 5000 });
       }
     });
   }

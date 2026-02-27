@@ -67,7 +67,7 @@ func (m deleteModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					newList = append(newList, mm)
 				}
 				m.cfg.ModelList = newList
-				if err := config.SaveConfig(internal.GetConfigPath(), m.cfg); err != nil {
+				if err := internal.SaveConfigAndRestart(m.cfg); err != nil {
 					m.err = err
 				}
 				return m, tea.Quit
@@ -82,7 +82,7 @@ func (m deleteModelTUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					newList = append(newList, mm)
 				}
 				m.cfg.ModelList = newList
-				if err := config.SaveConfig(internal.GetConfigPath(), m.cfg); err != nil {
+				if err := internal.SaveConfigAndRestart(m.cfg); err != nil {
 					m.err = err
 				}
 				return m, tea.Quit
@@ -158,8 +158,7 @@ func NewDeleteCommand() *cobra.Command {
 				fmt.Println("tui error:", err)
 				return
 			}
-	},
+		},
 	}
 	return cmd
 }
-

@@ -22,6 +22,10 @@ export class ApiService {
     return this.http.post<void>(`${this.apiUrl}/config`, config);
   }
 
+  restartGateway(): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/gateway/restart`, {});
+  }
+
   // Model APIs
   getModels(): Observable<ModelConfig[]> {
     return this.http.get<ModelConfig[]>(`${this.apiUrl}/models`);

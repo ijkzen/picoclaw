@@ -1,11 +1,13 @@
 package internal
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/sipeed/picoclaw/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -94,4 +96,23 @@ func TestGetConfigPath_Windows(t *testing.T) {
 
 func TestGetVersion(t *testing.T) {
 	assert.Equal(t, "dev", GetVersion())
+}
+
+func TestShouldSkipAutoGatewayRestart_ByEnv(t *testing.T) {
+	t.Setenv("PICOCLAW_DISABLE_AUTO_RESTART", "1")
+	assert.True(t, shouldSkipAutoGatewayRestart())
+}
+
+func TestSaveConfigPathAndRestart_SavesConfigWhenRestartSkipped(t *testing.T) {
+	t.Setenv("PICOCLAW_DISABLE_AUTO_RESTART", "1")
+
+	tmpDir := t.TempDir()
+	cfgPath := filepath.Join(tmpDir, "config.json")
+	cfg := config.DefaultConfig()
+
+	err := SaveConfigPathAndRestart(cfgPath, cfg)
+	require.NoError(t, err)
+
+	_, statErr := os.Stat(cfgPath)
+	require.NoError(t, statErr)
 }

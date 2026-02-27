@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
 
@@ -38,6 +39,7 @@ func NewServer(host string, port int, cfg *config.Config, agentLoop *agent.Agent
 	mux.HandleFunc("/api/chat", s.handleChat)
 	mux.HandleFunc("/api/chat/stream", s.handleChatStream)
 	mux.HandleFunc("/api/status", s.handleStatus)
+	mux.HandleFunc("/api/gateway/restart", s.handleGatewayRestart)
 
 	staticFS, err := fs.Sub(DistFS, "dist/browser")
 	if err != nil {
@@ -239,6 +241,37 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		"heartbeat": s.cfg.Heartbeat.Enabled,
 	}
 	json.NewEncoder(w).Encode(status)
+}
+
+func (s *Server) handleGatewayRestart(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	exe, err := os.Executable()
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+
+	// Delay restart slightly so this HTTP response can be returned before
+	// the running gateway process is stopped.
+	cmd := exec.Command(exe, "gateway", "restart", "--delay", "1")
+	cmd.Stdin = nil
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	if err := cmd.Start(); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "%s"}`, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	_ = cmd.Process.Release()
+
+	w.WriteHeader(http.StatusAccepted)
+	json.NewEncoder(w).Encode(map[string]string{"status": "restarting"})
 }
 
 func (s *Server) saveConfig(w http.ResponseWriter) {

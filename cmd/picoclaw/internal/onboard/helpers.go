@@ -25,7 +25,7 @@ func onboard() {
 	}
 
 	cfg := config.DefaultConfig()
-	if err := config.SaveConfig(configPath, cfg); err != nil {
+	if err := internal.SaveConfigPathAndRestart(configPath, cfg); err != nil {
 		fmt.Printf("Error saving config: %v\n", err)
 		os.Exit(1)
 	}
