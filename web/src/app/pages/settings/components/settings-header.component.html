@@ -1,0 +1,12 @@
+<mat-card class="mb-4">
+  <mat-card-header>
+    <mat-card-title>Settings</mat-card-title>
+    <mat-card-subtitle>Configure your PicoClaw instance</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-actions align="end">
+    <button mat-raised-button color="primary" (click)="save.emit()" [disabled]="isSaving() || isRestarting()">
+      <mat-icon>save</mat-icon>
+      {{ isSaving() ? 'Saving...' : (isRestarting() ? 'Restarting Gateway...' : 'Save Changes') }}
+    </button>
+  </mat-card-actions>
+</mat-card>

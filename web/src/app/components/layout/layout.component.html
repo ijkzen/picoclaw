@@ -1,0 +1,61 @@
+<mat-sidenav-container class="h-full">
+  <mat-sidenav
+    #drawer
+    class="flex w-[280px] flex-col"
+    fixedInViewport
+    [attr.role]="isHandset() ? 'dialog' : 'navigation'"
+    [mode]="isHandset() ? 'over' : 'side'"
+    [opened]="!isHandset()">
+    <mat-toolbar class="flex items-center justify-center p-4">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] text-xl font-bold text-white">
+          P
+        </div>
+        <span class="text-xl font-medium text-[var(--mat-sys-on-surface)]">PicoClaw</span>
+      </div>
+    </mat-toolbar>
+
+    <mat-divider></mat-divider>
+
+    <mat-nav-list class="flex-1 py-4">
+      <a
+        mat-list-item
+        routerLink="/chat"
+        routerLinkActive="bg-[var(--mat-sys-primary-container)] text-[var(--mat-sys-on-primary-container)]"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="isHandset() && drawer.close()">
+        <mat-icon matListItemIcon>chat</mat-icon>
+        <span matListItemTitle>Chat</span>
+      </a>
+
+      <a
+        mat-list-item
+        routerLink="/settings"
+        routerLinkActive="bg-[var(--mat-sys-primary-container)] text-[var(--mat-sys-on-primary-container)]"
+        (click)="isHandset() && drawer.close()">
+        <mat-icon matListItemIcon>settings</mat-icon>
+        <span matListItemTitle>Settings</span>
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="flex h-full flex-col bg-[var(--mat-sys-surface-container)]">
+    <mat-toolbar color="primary" class="sticky top-0 z-[1000] [box-shadow:var(--mat-sys-level2)]">
+      @if (isHandset()) {
+        <button type="button" mat-icon-button (click)="drawer.toggle()" aria-label="Toggle sidenav">
+          <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
+        </button>
+      }
+
+      <span class="flex-1"></span>
+
+      <button mat-icon-button (click)="onToggleTheme($event)" matTooltip="Toggle theme">
+        <mat-icon>{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+    </mat-toolbar>
+
+    <div class="flex flex-1 flex-col overflow-hidden bg-[var(--mat-sys-surface)]">
+      <router-outlet></router-outlet>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

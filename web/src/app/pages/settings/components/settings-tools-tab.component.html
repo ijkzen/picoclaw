@@ -1,0 +1,153 @@
+<div class="flex h-full min-h-0 flex-1 flex-col overflow-y-auto p-4">
+  <mat-card>
+    <mat-card-header>
+      <mat-icon>search</mat-icon>
+      <mat-card-title>Web Search</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @let providers = webProviders();
+
+      <mat-card appearance="outlined" class="mb-4">
+        <mat-card-header>
+          <mat-card-title>Brave</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-slide-toggle
+            [ngModel]="providers.brave.enabled"
+            (ngModelChange)="providers.brave.enabled = $event"
+            color="primary">
+            Enabled
+          </mat-slide-toggle>
+
+          @if (providers.brave.enabled) {
+            <mat-form-field appearance="outline" class="mt-4 w-full">
+              <mat-label>API Key</mat-label>
+              <input matInput [ngModel]="providers.brave.api_key" (ngModelChange)="providers.brave.api_key = $event" type="password">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Max Results</mat-label>
+              <input
+                matInput
+                type="number"
+                [ngModel]="providers.brave.max_results"
+                (ngModelChange)="providers.brave.max_results = $event">
+            </mat-form-field>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="mb-4">
+        <mat-card-header>
+          <mat-card-title>Tavily</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-slide-toggle
+            [ngModel]="providers.tavily.enabled"
+            (ngModelChange)="providers.tavily.enabled = $event"
+            color="primary">
+            Enabled
+          </mat-slide-toggle>
+
+          @if (providers.tavily.enabled) {
+            <mat-form-field appearance="outline" class="mt-4 w-full">
+              <mat-label>API Key</mat-label>
+              <input
+                matInput
+                [ngModel]="providers.tavily.api_key"
+                (ngModelChange)="providers.tavily.api_key = $event"
+                type="password">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Max Results</mat-label>
+              <input
+                matInput
+                type="number"
+                [ngModel]="providers.tavily.max_results"
+                (ngModelChange)="providers.tavily.max_results = $event">
+            </mat-form-field>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="mb-4">
+        <mat-card-header>
+          <mat-card-title>DuckDuckGo</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-slide-toggle
+            [ngModel]="providers.duckduckgo.enabled"
+            (ngModelChange)="providers.duckduckgo.enabled = $event"
+            color="primary">
+            Enabled
+          </mat-slide-toggle>
+
+          @if (providers.duckduckgo.enabled) {
+            <mat-form-field appearance="outline" class="mt-4 w-full">
+              <mat-label>Max Results</mat-label>
+              <input
+                matInput
+                type="number"
+                [ngModel]="providers.duckduckgo.max_results"
+                (ngModelChange)="providers.duckduckgo.max_results = $event">
+            </mat-form-field>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined" class="mb-4">
+        <mat-card-header>
+          <mat-card-title>Perplexity</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <mat-slide-toggle
+            [ngModel]="providers.perplexity.enabled"
+            (ngModelChange)="providers.perplexity.enabled = $event"
+            color="primary">
+            Enabled
+          </mat-slide-toggle>
+
+          @if (providers.perplexity.enabled) {
+            <mat-form-field appearance="outline" class="mt-4 w-full">
+              <mat-label>API Key</mat-label>
+              <input
+                matInput
+                [ngModel]="providers.perplexity.api_key"
+                (ngModelChange)="providers.perplexity.api_key = $event"
+                type="password">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="w-full">
+              <mat-label>Max Results</mat-label>
+              <input
+                matInput
+                type="number"
+                [ngModel]="providers.perplexity.max_results"
+                (ngModelChange)="providers.perplexity.max_results = $event">
+            </mat-form-field>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-form-field appearance="outline" class="mt-4 w-full">
+        <mat-label>Proxy (Optional)</mat-label>
+        <input matInput [ngModel]="webProxy()" (ngModelChange)="onWebProxyChange($event)" placeholder="http://proxy.example.com:8080">
+      </mat-form-field>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="mt-4">
+    <mat-card-header>
+      <mat-icon>schedule</mat-icon>
+      <mat-card-title>Scheduled Tasks</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Execution Timeout (minutes)</mat-label>
+        <input matInput type="number" [ngModel]="cronTimeout()" (ngModelChange)="onCronTimeoutChange($event)">
+        <mat-hint>Set to 0 for no timeout</mat-hint>
+      </mat-form-field>
+    </mat-card-content>
+  </mat-card>
+</div>

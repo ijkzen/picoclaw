@@ -201,6 +201,22 @@ web/
 └── package.json
 ```
 
+### Component Template & Style Policy
+
+- For all Angular components except the root component (`web/src/app/app.ts`):
+  - Do not use inline `template` or inline `styles` in `@Component`.
+  - Use `templateUrl` with a separate `.component.html` file.
+  - Do not create component-level `.scss`/`.css` style files (`styleUrl`/`styleUrls` should not be used).
+  - Keep component styling in template markup using Tailwind utility classes.
+  - If host-level layout styling is required, use `host: { class: '...' }` in the component decorator.
+
+### Component Complexity & Decomposition Policy
+
+- Frontend UI components must stay small and single-responsibility.
+- If a component becomes too complex (for example: multiple large sections/tabs, mixed responsibilities, or hard-to-maintain template/logic), split it into smaller standalone child components.
+- Prefer decomposition by feature area (for example: header, tab panel, list item editor, overlay dialog).
+- Parent components should focus on orchestration/state flow; child components should focus on presentation and local interactions.
+
 ### Common Modifications
 
 #### Global Flat Card Style
@@ -465,4 +481,3 @@ $ picoclaw gateway stop && sleep 1 && picoclaw gateway start
 - [Angular Material Card API](https://material.angular.dev/components/card/api)
 - [Playwright MCP Documentation](https://github.com/microsoft/playwright-mcp)
 - [Angular Flex Layout Guide](https://material.angular.dev/guides)
-

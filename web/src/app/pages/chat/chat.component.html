@@ -1,0 +1,64 @@
+<div class="mx-auto flex h-full max-w-[800px] flex-col">
+  <div #messagesContainer class="flex-1 overflow-y-auto p-4">
+    @if (messages().length > 0) {
+      <mat-list class="p-0">
+        @for (message of messages(); track message.id) {
+          <mat-list-item
+            [class]="message.role === 'user' ? '!h-auto min-h-[72px] py-4 bg-[var(--mat-sys-primary-container)]' : '!h-auto min-h-[72px] py-4'">
+            <mat-icon matListItemIcon>
+              {{ message.role === 'user' ? 'person' : 'smart_toy' }}
+            </mat-icon>
+            <div matListItemTitle class="mb-2 flex items-center justify-between">
+              <span>{{ message.role === 'user' ? 'You' : 'PicoClaw' }}</span>
+              <span class="text-xs opacity-60">{{ message.timestamp | date:'shortTime' }}</span>
+            </div>
+            <div matListItemLine>
+              <pre class="m-0 whitespace-pre-wrap break-words font-inherit text-sm">{{ message.content }}</pre>
+              @if (message.isStreaming) {
+                <span class="animate-pulse">|</span>
+              }
+            </div>
+          </mat-list-item>
+          <mat-divider></mat-divider>
+        }
+
+        @if (isLoading() && !streamingMessage()) {
+          <mat-list-item class="text-[var(--mat-sys-on-surface-variant)]">
+            <mat-spinner matListItemIcon diameter="20"></mat-spinner>
+            <div matListItemTitle>Thinking...</div>
+          </mat-list-item>
+        }
+      </mat-list>
+    }
+  </div>
+
+  <div class="shrink-0 bg-[var(--mat-sys-surface)]">
+    <mat-divider></mat-divider>
+    <div class="flex items-start gap-3 p-4">
+      <mat-form-field appearance="outline" class="flex-1">
+        <mat-label>Type your message...</mat-label>
+        <textarea
+          matInput
+          [(ngModel)]="inputMessage"
+          (keydown)="onKeydown($event)"
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="1"
+          cdkAutosizeMaxRows="5">
+        </textarea>
+      </mat-form-field>
+
+      <button
+        mat-fab
+        color="primary"
+        [disabled]="!inputMessage().trim() || isLoading()"
+        (click)="sendMessage()"
+        matTooltip="Send message (Enter)">
+        @if (isLoading()) {
+          <mat-spinner diameter="24"></mat-spinner>
+        } @else {
+          <mat-icon>send</mat-icon>
+        }
+      </button>
+    </div>
+  </div>
+</div>

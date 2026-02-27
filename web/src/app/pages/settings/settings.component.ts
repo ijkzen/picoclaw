@@ -1,458 +1,34 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { Subscription, catchError, map, of, switchMap, timer } from 'rxjs';
 import { Config, ModelConfig } from '../../models/config.model';
 import { ApiService } from '../../services/api.service';
+import { SettingsChannelsTabComponent } from './components/settings-channels-tab.component';
+import { SettingsHeaderComponent } from './components/settings-header.component';
+import { SettingsHeartbeatTabComponent } from './components/settings-heartbeat-tab.component';
+import { SettingsModelsTabComponent } from './components/settings-models-tab.component';
+import { SettingsToolsTabComponent } from './components/settings-tools-tab.component';
+import { SettingsChannelItem, SettingsWebProviders } from './settings.types';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     MatTabsModule,
-    MatCardModule,
-    MatInputModule,
-    MatButtonModule,
-    MatIconModule,
-    MatSlideToggleModule,
-    MatSelectModule,
     MatSnackBarModule,
-    MatDividerModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatListModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    SettingsHeaderComponent,
+    SettingsModelsTabComponent,
+    SettingsChannelsTabComponent,
+    SettingsToolsTabComponent,
+    SettingsHeartbeatTabComponent
   ],
-  template: `
-    <div class="settings-container">
-      <mat-card class="header-card">
-        <mat-card-header>
-          <mat-card-title>Settings</mat-card-title>
-          <mat-card-subtitle>Configure your PicoClaw instance</mat-card-subtitle>
-        </mat-card-header>
-          <mat-card-actions align="end">
-	          <button mat-raised-button color="primary" (click)="saveConfig()" [disabled]="isSaving() || isRestarting()">
-	            <mat-icon>save</mat-icon>
-	            {{ isSaving() ? 'Saving...' : (isRestarting() ? 'Restarting Gateway...' : 'Save Changes') }}
-	          </button>
-	        </mat-card-actions>
-	      </mat-card>
-
-      @if (isLoading()) {
-        <div class="loading-container">
-          <mat-spinner></mat-spinner>
-        </div>
-      } @else {
-        <mat-tab-group animationDuration="0ms">
-          <!-- Models Tab -->
-          <mat-tab label="Models">
-            <div class="tab-content">
-              <mat-card>
-                <mat-card-header>
-                  <mat-icon >stars</mat-icon>
-                  <mat-card-title>Default Model</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                  <mat-form-field appearance="outline" style="width: 100%;">
-                    <mat-select [(value)]="defaultModel">
-                      @for (model of config()?.model_list; track model.model_name) {
-                        <mat-option [value]="model.model_name">
-                          {{ model.model_name }} ({{ model.model }})
-                        </mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                </mat-card-content>
-              </mat-card>
-
-              <mat-divider style="margin: 16px 0;"></mat-divider>
-
-              <mat-card>
-                <mat-card-header>
-                  <mat-card-title>Model Configuration</mat-card-title>
-                </mat-card-header>
-                <mat-card-actions align="end">
-                  <button mat-stroked-button color="primary" (click)="addNewModel()">
-                    <mat-icon>add</mat-icon>
-                    Add Model
-                  </button>
-                </mat-card-actions>
-              </mat-card>
-
-              <mat-accordion>
-                @for (model of config()?.model_list; track model.model_name; let i = $index) {
-                  <mat-expansion-panel>
-                    <mat-expansion-panel-header>
-                      <mat-panel-title>
-                        @if (model.model_name === defaultModel()) {
-                          <mat-icon style="margin-right: 8px; color: var(--mat-sys-primary);">star</mat-icon>
-                        }
-                        {{ model.model_name }}
-                      </mat-panel-title>
-                      <mat-panel-description>
-                        {{ model.model }}
-                      </mat-panel-description>
-                    </mat-expansion-panel-header>
-
-                    <div style="display: flex; flex-direction: column; gap: 16px;">
-                      <mat-form-field appearance="outline">
-                        <mat-label>Model Name</mat-label>
-                        <input matInput [(ngModel)]="model.model_name">
-                      </mat-form-field>
-
-                      <mat-form-field appearance="outline">
-                        <mat-label>Model ID</mat-label>
-                        <input matInput [(ngModel)]="model.model">
-                      </mat-form-field>
-
-                      <mat-form-field appearance="outline">
-                        <mat-label>API Key</mat-label>
-                        <input matInput [(ngModel)]="model.api_key" type="password">
-                      </mat-form-field>
-
-                      <mat-form-field appearance="outline">
-                        <mat-label>API Base URL (Optional)</mat-label>
-                        <input matInput [(ngModel)]="model.api_base">
-                      </mat-form-field>
-                    </div>
-
-                    <mat-action-row>
-                      @if (model.model_name !== defaultModel()) {
-                        <button mat-button color="primary" (click)="setDefaultModel(model.model_name)">
-                          Set as Default
-                        </button>
-                      }
-                      <button mat-button color="warn" (click)="deleteModel(i)">
-                        <mat-icon>delete</mat-icon>
-                        Delete
-                      </button>
-                    </mat-action-row>
-                  </mat-expansion-panel>
-                }
-              </mat-accordion>
-            </div>
-          </mat-tab>
-
-          <!-- Channels Tab -->
-          <mat-tab label="Channels">
-            <div class="tab-content">
-              <mat-card>
-                <mat-card-header>
-                  <mat-icon >chat</mat-icon>
-                  <mat-card-title>Chat Channel Configuration</mat-card-title>
-                  <mat-card-subtitle>Configure integrations with chat platforms</mat-card-subtitle>
-                </mat-card-header>
-              </mat-card>
-
-              @for (channel of channelConfigs(); track channel.key) {
-                <mat-card style="margin-top: 16px;">
-                  <mat-card-header>
-                    <mat-card-title>{{ channel.name }}</mat-card-title>
-                    <mat-card-subtitle>{{ channel.description }}</mat-card-subtitle>
-                  </mat-card-header>
-                  
-                  <mat-card-content>
-                    <mat-slide-toggle
-                      [(ngModel)]="channel.config.enabled"
-                      color="primary">
-                      {{ channel.config.enabled ? 'Enabled' : 'Disabled' }}
-                    </mat-slide-toggle>
-
-                    @if (channel.config.enabled) {
-                      <mat-divider style="margin: 16px 0;"></mat-divider>
-                      
-                      @for (field of channel.fields; track field.key) {
-                        <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 8px;">
-                          <mat-label>{{ field.label }}</mat-label>
-                          @if (field.type === 'password') {
-                            <input matInput [(ngModel)]="channel.config[field.key]" type="password">
-                          } @else if (field.type === 'number') {
-                            <input matInput [(ngModel)]="channel.config[field.key]" type="number">
-                          } @else {
-                            <input matInput [(ngModel)]="channel.config[field.key]">
-                          }
-                          @if (field.hint) {
-                            <mat-hint>{{ field.hint }}</mat-hint>
-                          }
-                        </mat-form-field>
-                      }
-                    }
-                  </mat-card-content>
-                </mat-card>
-              }
-            </div>
-          </mat-tab>
-
-          <!-- Tools Tab -->
-          <mat-tab label="Tools">
-            <div class="tab-content">
-              <mat-card>
-                <mat-card-header>
-                  <mat-icon >search</mat-icon>
-                  <mat-card-title>Web Search</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                  <!-- Brave -->
-                  <mat-card appearance="outlined" style="margin-bottom: 16px;">
-                    <mat-card-header>
-                      <mat-card-title>Brave</mat-card-title>
-                    </mat-card-header>
-                    <mat-card-content>
-                      <mat-slide-toggle [(ngModel)]="webProviders.brave.enabled" color="primary">
-                        Enabled
-                      </mat-slide-toggle>
-
-                      @if (webProviders.brave.enabled) {
-                        <mat-form-field appearance="outline" style="width: 100%; margin-top: 16px;">
-                          <mat-label>API Key</mat-label>
-                          <input matInput [(ngModel)]="webProviders.brave.api_key" type="password">
-                        </mat-form-field>
-                        
-                        <mat-form-field appearance="outline" style="width: 100%;">
-                          <mat-label>Max Results</mat-label>
-                          <input matInput type="number" [(ngModel)]="webProviders.brave.max_results">
-                        </mat-form-field>
-                      }
-                    </mat-card-content>
-                  </mat-card>
-
-                  <!-- Tavily -->
-                  <mat-card appearance="outlined" style="margin-bottom: 16px;">
-                    <mat-card-header>
-                      <mat-card-title>Tavily</mat-card-title>
-                    </mat-card-header>
-                    <mat-card-content>
-                      <mat-slide-toggle [(ngModel)]="webProviders.tavily.enabled" color="primary">
-                        Enabled
-                      </mat-slide-toggle>
-
-                      @if (webProviders.tavily.enabled) {
-                        <mat-form-field appearance="outline" style="width: 100%; margin-top: 16px;">
-                          <mat-label>API Key</mat-label>
-                          <input matInput [(ngModel)]="webProviders.tavily.api_key" type="password">
-                        </mat-form-field>
-                        
-                        <mat-form-field appearance="outline" style="width: 100%;">
-                          <mat-label>Max Results</mat-label>
-                          <input matInput type="number" [(ngModel)]="webProviders.tavily.max_results">
-                        </mat-form-field>
-                      }
-                    </mat-card-content>
-                  </mat-card>
-
-                  <!-- DuckDuckGo -->
-                  <mat-card appearance="outlined" style="margin-bottom: 16px;">
-                    <mat-card-header>
-                      <mat-card-title>DuckDuckGo</mat-card-title>
-                    </mat-card-header>
-                    <mat-card-content>
-                      <mat-slide-toggle [(ngModel)]="webProviders.duckduckgo.enabled" color="primary">
-                        Enabled
-                      </mat-slide-toggle>
-
-                      @if (webProviders.duckduckgo.enabled) {
-                        <mat-form-field appearance="outline" style="width: 100%; margin-top: 16px;">
-                          <mat-label>Max Results</mat-label>
-                          <input matInput type="number" [(ngModel)]="webProviders.duckduckgo.max_results">
-                        </mat-form-field>
-                      }
-                    </mat-card-content>
-                  </mat-card>
-
-                  <!-- Perplexity -->
-                  <mat-card appearance="outlined" style="margin-bottom: 16px;">
-                    <mat-card-header>
-                      <mat-card-title>Perplexity</mat-card-title>
-                    </mat-card-header>
-                    <mat-card-content>
-                      <mat-slide-toggle [(ngModel)]="webProviders.perplexity.enabled" color="primary">
-                        Enabled
-                      </mat-slide-toggle>
-
-                      @if (webProviders.perplexity.enabled) {
-                        <mat-form-field appearance="outline" style="width: 100%; margin-top: 16px;">
-                          <mat-label>API Key</mat-label>
-                          <input matInput [(ngModel)]="webProviders.perplexity.api_key" type="password">
-                        </mat-form-field>
-                        
-                        <mat-form-field appearance="outline" style="width: 100%;">
-                          <mat-label>Max Results</mat-label>
-                          <input matInput type="number" [(ngModel)]="webProviders.perplexity.max_results">
-                        </mat-form-field>
-                      }
-                    </mat-card-content>
-                  </mat-card>
-
-                  <mat-form-field appearance="outline" style="width: 100%; margin-top: 16px;">
-                    <mat-label>Proxy (Optional)</mat-label>
-                    <input matInput [(ngModel)]="webProxy" placeholder="http://proxy.example.com:8080">
-                  </mat-form-field>
-                </mat-card-content>
-              </mat-card>
-
-              <mat-card style="margin-top: 16px;">
-                <mat-card-header>
-                  <mat-icon >schedule</mat-icon>
-                  <mat-card-title>Scheduled Tasks</mat-card-title>
-                </mat-card-header>
-                <mat-card-content>
-                  <mat-form-field appearance="outline" style="width: 100%;">
-                    <mat-label>Execution Timeout (minutes)</mat-label>
-                    <input matInput type="number" [(ngModel)]="cronTimeout">
-                    <mat-hint>Set to 0 for no timeout</mat-hint>
-                  </mat-form-field>
-                </mat-card-content>
-              </mat-card>
-            </div>
-          </mat-tab>
-
-          <!-- Heartbeat Tab -->
-          <mat-tab label="Heartbeat">
-            <div class="tab-content">
-              <mat-card>
-                <mat-card-header>
-                  <mat-icon >favorite</mat-icon>
-                  <mat-card-title>Heartbeat Configuration</mat-card-title>
-                  <mat-card-subtitle>Configure periodic task execution</mat-card-subtitle>
-                </mat-card-header>
-                
-                <mat-card-content>
-                  <mat-slide-toggle [(ngModel)]="heartbeatEnabled" color="primary">
-                    {{ heartbeatEnabled ? 'Enabled' : 'Disabled' }}
-                  </mat-slide-toggle>
-
-                  @if (heartbeatEnabled) {
-                    <mat-divider style="margin: 16px 0;"></mat-divider>
-                    
-                    <mat-form-field appearance="outline" style="width: 100%;">
-                      <mat-label>Interval (minutes)</mat-label>
-                      <input matInput type="number" [(ngModel)]="heartbeatInterval" min="5">
-                      <mat-hint>Minimum 5 minutes</mat-hint>
-                    </mat-form-field>
-                  }
-                </mat-card-content>
-              </mat-card>
-
-              <mat-card style="margin-top: 16px;">
-                <mat-card-content>
-                  <p style="display: flex; align-items: center; gap: 8px;">
-                    <mat-icon>info</mat-icon>
-                    Heartbeat tasks are defined in the HEARTBEAT.md file in your workspace.
-                  </p>
-                </mat-card-content>
-              </mat-card>
-            </div>
-          </mat-tab>
-	        </mat-tab-group>
-	      }
-
-        @if (isRestarting()) {
-          <div class="restart-overlay">
-            <div class="restart-dialog">
-              <mat-spinner diameter="48"></mat-spinner>
-              <div class="restart-title">Applying Configuration</div>
-              <div class="restart-subtitle">Restarting gateway, please wait...</div>
-            </div>
-          </div>
-        }
-	    </div>
-	  `,
-  styles: [`
-    :host {
-      display: block;
-    }
-
-	    .settings-container {
-	      max-width: 900px;
-	      margin: 0 auto;
-	      padding: 16px;
-	      display: flex;
-	      flex-direction: column;
-	      height: calc(100vh - 120px);
-        position: relative;
-	    }
-
-    mat-tab-group {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .header-card {
-      margin-bottom: 16px;
-    }
-
-    .loading-container {
-      display: flex;
-      justify-content: center;
-      padding: 48px;
-    }
-
-.tab-content {
-      padding: 16px;
-      overflow-y: auto;
-      flex: 1;
-      min-height: 0;
-    }
-
-    mat-expansion-panel {
-      margin: 0 16px 12px 16px;
-    }
-
-	    mat-accordion {
-	      display: block;
-	      margin-top: 16px;
-	    }
-
-      .restart-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.35);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-      }
-
-      .restart-dialog {
-        background: var(--mat-sys-surface);
-        border: 1px solid var(--mat-sys-outline-variant);
-        border-radius: 16px;
-        min-width: 280px;
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
-      }
-
-      .restart-title {
-        font-size: 18px;
-        font-weight: 600;
-      }
-
-      .restart-subtitle {
-        font-size: 14px;
-        opacity: 0.85;
-      }
-	  `]
+  templateUrl: './settings.component.html',
+  host: { class: 'block' }
 })
 export class SettingsComponent implements OnInit, OnDestroy {
   config = signal<Config | null>(null);
@@ -463,7 +39,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private restartPollSub?: Subscription;
 
   // Tools state
-  webProviders = {
+  webProviders: SettingsWebProviders = {
     brave: { enabled: false, api_key: '', max_results: 5 },
     tavily: { enabled: false, api_key: '', max_results: 5 },
     duckduckgo: { enabled: true, max_results: 5 },
@@ -474,14 +50,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   heartbeatEnabled = true;
   heartbeatInterval = 30;
 
-  channelConfigs = signal<Array<{
-    key: string;
-    name: string;
-    icon: string;
-    description: string;
-    config: any;
-    fields: Array<{ key: string; label: string; type?: string; hint?: string; fullWidth?: boolean }>;
-  }>>([
+  channelConfigs = signal<SettingsChannelItem[]>([
     {
       key: 'telegram',
       name: 'Telegram',
@@ -690,7 +259,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
     // Update channels from channelConfigs
     this.channelConfigs().forEach(ch => {
       if (config.channels) {
-        (config.channels as any)[ch.key] = ch.config;
+        const channels = config.channels as unknown as Record<string, unknown>;
+        channels[ch.key] = ch.config;
       }
     });
 

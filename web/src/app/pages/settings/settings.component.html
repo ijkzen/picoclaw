@@ -1,0 +1,58 @@
+<div class="relative mx-auto flex h-[calc(100vh-120px)] max-w-[900px] flex-col p-4">
+  <app-settings-header
+    [isSaving]="isSaving()"
+    [isRestarting]="isRestarting()"
+    (save)="saveConfig()">
+  </app-settings-header>
+
+  @if (isLoading()) {
+    <div class="flex justify-center p-12">
+      <mat-spinner></mat-spinner>
+    </div>
+  } @else {
+    <mat-tab-group animationDuration="0ms" class="flex min-h-0 flex-1 flex-col">
+      <mat-tab label="Models">
+        <app-settings-models-tab
+          [config]="config()"
+          [defaultModel]="defaultModel()"
+          (addModel)="addNewModel()"
+          (defaultModelChange)="setDefaultModel($event)"
+          (deleteModel)="deleteModel($event)">
+        </app-settings-models-tab>
+      </mat-tab>
+
+      <mat-tab label="Channels">
+        <app-settings-channels-tab [channelConfigs]="channelConfigs()"></app-settings-channels-tab>
+      </mat-tab>
+
+      <mat-tab label="Tools">
+        <app-settings-tools-tab
+          [webProviders]="webProviders"
+          [webProxy]="webProxy"
+          [cronTimeout]="cronTimeout"
+          (webProxyChange)="webProxy = $event"
+          (cronTimeoutChange)="cronTimeout = $event">
+        </app-settings-tools-tab>
+      </mat-tab>
+
+      <mat-tab label="Heartbeat">
+        <app-settings-heartbeat-tab
+          [heartbeatEnabled]="heartbeatEnabled"
+          [heartbeatInterval]="heartbeatInterval"
+          (heartbeatEnabledChange)="heartbeatEnabled = $event"
+          (heartbeatIntervalChange)="heartbeatInterval = $event">
+        </app-settings-heartbeat-tab>
+      </mat-tab>
+    </mat-tab-group>
+  }
+
+  @if (isRestarting()) {
+    <div class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/35">
+      <div class="flex min-w-[280px] flex-col items-center gap-2.5 rounded-2xl border border-[var(--mat-sys-outline-variant)] bg-[var(--mat-sys-surface)] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.2)]">
+        <mat-spinner diameter="48"></mat-spinner>
+        <div class="text-[18px] font-semibold">Applying Configuration</div>
+        <div class="text-sm opacity-[0.85]">Restarting gateway, please wait...</div>
+      </div>
+    </div>
+  }
+</div>

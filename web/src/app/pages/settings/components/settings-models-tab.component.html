@@ -1,0 +1,85 @@
+<div class="flex h-full min-h-0 flex-1 flex-col overflow-y-auto p-4">
+  <mat-card>
+    <mat-card-header>
+      <mat-icon>stars</mat-icon>
+      <mat-card-title>Default Model</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-select [value]="defaultModel()" (valueChange)="defaultModelChange.emit($event)">
+          @for (model of config()?.model_list; track model.model_name) {
+            <mat-option [value]="model.model_name">
+              {{ model.model_name }} ({{ model.model }})
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-divider class="my-4"></mat-divider>
+
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Model Configuration</mat-card-title>
+    </mat-card-header>
+    <mat-card-actions align="end">
+      <button mat-stroked-button color="primary" (click)="addModel.emit()">
+        <mat-icon>add</mat-icon>
+        Add Model
+      </button>
+    </mat-card-actions>
+  </mat-card>
+
+  <mat-accordion class="mt-4 block">
+    @for (model of config()?.model_list; track model.model_name; let i = $index) {
+      <mat-expansion-panel class="mx-4 mb-3">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            @if (model.model_name === defaultModel()) {
+              <mat-icon class="mr-2 text-[var(--mat-sys-primary)]">star</mat-icon>
+            }
+            {{ model.model_name }}
+          </mat-panel-title>
+          <mat-panel-description>
+            {{ model.model }}
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <div class="flex flex-col gap-4">
+          <mat-form-field appearance="outline">
+            <mat-label>Model Name</mat-label>
+            <input matInput [(ngModel)]="model.model_name">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Model ID</mat-label>
+            <input matInput [(ngModel)]="model.model">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>API Key</mat-label>
+            <input matInput [(ngModel)]="model.api_key" type="password">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>API Base URL (Optional)</mat-label>
+            <input matInput [(ngModel)]="model.api_base">
+          </mat-form-field>
+        </div>
+
+        <mat-action-row>
+          @if (model.model_name !== defaultModel()) {
+            <button mat-button color="primary" (click)="defaultModelChange.emit(model.model_name)">
+              Set as Default
+            </button>
+          }
+          <button mat-button color="warn" (click)="deleteModel.emit(i)">
+            <mat-icon>delete</mat-icon>
+            Delete
+          </button>
+        </mat-action-row>
+      </mat-expansion-panel>
+    }
+  </mat-accordion>
+</div>
