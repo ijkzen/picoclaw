@@ -62,14 +62,21 @@ export class ApiService {
         `${this.apiUrl}/chat/stream?content=${encodeURIComponent(content)}&session_key=${encodeURIComponent(sessionKey)}`
       );
 
-      eventSource.onmessage = (event) => {
-        if (event.data === '[DONE]') {
-          eventSource.close();
-          observer.complete();
+eventSource.onmessage = (event) => {
+if (event.data === '[DONE]') {
+eventSource.close();
+observer.complete();
         } else {
-          observer.next(event.data);
+          // Parse JSON-encoded chunk to handle newlines properly
+          try {
+            const decoded = JSON.parse(event.data);
+            observer.next(decoded);
+          } catch {
+            // Fallback for non-JSON data
+observer.next(event.data);
         }
-      };
+        }
+};
 
       eventSource.onerror = (error) => {
         eventSource.close();

@@ -5,8 +5,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApiService } from '../../services/api.service';
+import { MarkdownService } from '../../services/markdown.service';
 import { Message } from '../../models/config.model';
 
 @Component({
@@ -19,6 +21,7 @@ import { Message } from '../../models/config.model';
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    MatProgressBarModule,
     MatTooltipModule
   ],
   templateUrl: './chat.component.html',
@@ -40,7 +43,20 @@ export class ChatComponent implements AfterViewChecked {
     'Help me debug my code'
   ];
 
-  constructor(private apiService: ApiService) {}
+  constructor(
+    private apiService: ApiService,
+    private markdownService: MarkdownService
+  ) {}
+
+  renderMarkdown(content: string): string { return this.markdownService.renderMarkdown(content); }
+
+  toggleRawContent(message: Message): void {
+    message.showRawContent = !message.showRawContent;
+  }
+
+  toggleReasoning(message: Message): void {
+    message.isReasoningCollapsed = !message.isReasoningCollapsed;
+  }
 
   ngAfterViewChecked(): void {
     const message = this.messages().at(-1);
@@ -95,7 +111,8 @@ export class ChatComponent implements AfterViewChecked {
       role: 'assistant',
       content: '',
       timestamp: new Date(),
-      isStreaming: true
+      isStreaming: true,
+      isComplete: false
     };
 
     this.messages.update(msgs => [...msgs, assistantMessage]);
@@ -150,7 +167,7 @@ export class ChatComponent implements AfterViewChecked {
           if (lastMsg.role === 'assistant') {
             return [
               ...msgs.slice(0, -1),
-              { ...lastMsg, isStreaming: false }
+              { ...lastMsg, isStreaming: false, isComplete: true }
             ];
           }
           return msgs;

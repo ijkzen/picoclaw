@@ -80,4 +80,8 @@ export interface Message {
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
+  reasoning?: string;
+  isReasoningCollapsed?: boolean;
+  showRawContent?: boolean;
+  isComplete?: boolean;
 }

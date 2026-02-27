@@ -240,7 +240,9 @@ func (s *Server) handleChatStream(w http.ResponseWriter, r *http.Request) {
 
 	chunks := splitIntoChunks(response, 10)
 	for _, chunk := range chunks {
-		fmt.Fprintf(w, "data: %s\n\n", chunk)
+		// Encode chunk as JSON to properly handle newlines in SSE
+		jsonChunk, _ := json.Marshal(chunk)
+		fmt.Fprintf(w, "data: %s\n\n", jsonChunk)
 	}
 	fmt.Fprintf(w, "data: [DONE]\n\n")
 }

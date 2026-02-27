@@ -35,16 +35,48 @@
             </mat-icon>
           </div>
 
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
+            <!-- Reasoning section (collapsible) -->
+            @if (message.reasoning) {
+            <div class="mb-2">
+              <button mat-button (click)="toggleReasoning(message)" class="text-xs">
+                <mat-icon>{{ message.isReasoningCollapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+                思考过程
+              </button>
+              @if (!message.isReasoningCollapsed) {
+              <div class="p-2 rounded bg-[var(--mat-sys-surface-container)]">
+                <pre class="m-0 whitespace-pre-wrap text-xs opacity-80">{{ message.reasoning }}</pre>
+              </div>
+              }
+            </div>
+            }
+
+            <!-- Message content -->
             <div class="rounded-2xl border border-[var(--mat-sys-outline-variant)] p-3 shadow-sm"
               [class.bg-[var(--mat-sys-primary-container)]]="message.role === 'user'"
               [class.bg-[var(--mat-sys-surface-container-lowest)]]="message.role !== 'user'">
+
+              @if (message.showRawContent) {
               <pre
                 class="m-0 whitespace-pre-wrap break-words font-inherit text-sm leading-6">{{ message.content }}</pre>
-              @if (message.isStreaming) {
-              <span class="inline-block animate-pulse text-sm opacity-70">Generating...</span>
+              } @else {
+              <div class="markdown-content text-sm leading-6" [innerHTML]="renderMarkdown(message.content)"></div>
+              }
+
+              <!-- Streaming indicator -->
+              @if (message.isStreaming && !message.isComplete) {
+              <mat-progress-bar mode="indeterminate" class="mt-2"></mat-progress-bar>
               }
             </div>
+
+            <!-- Action buttons -->
+            <div class="mt-1 flex gap-2 justify-end">
+              <button mat-button (click)="toggleRawContent(message)" class="text-xs">
+                {{ message.showRawContent ? '显示 Markdown' : '显示原文' }}
+              </button>
+            </div>
+
+            <!-- Timestamp -->
             <div class="mt-1 px-1 text-xs opacity-65" [class.text-right]="message.role === 'user'">
               {{ message.timestamp | date:'shortTime' }}
             </div>

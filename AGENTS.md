@@ -111,6 +111,8 @@ pkg/{domain}/
 make build              # Build for current platform
 make build-all          # Build all platforms (linux/darwin/windows)
 make install            # Install to ~/.local/bin
+make clean              # Clean build artifacts
+make clean && make install && picoclaw gateway restart  # Full rebuild and restart
 make test               # Run tests
 make lint               # Run golangci-lint
 make fmt                # Format code
