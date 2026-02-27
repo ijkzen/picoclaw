@@ -20,6 +20,8 @@ import (
 	"github.com/sipeed/picoclaw/pkg/utils"
 )
 
+const feishuAutoReactionEmojiType = "SMILE"
+
 type FeishuChannel struct {
 	*BaseChannel
 	config   config.FeishuConfig
@@ -180,8 +182,46 @@ func (c *FeishuChannel) handleMessageReceive(_ context.Context, event *larkim.P2
 		"preview":   utils.Truncate(content, 80),
 	})
 
-	c.HandleMessage(senderID, chatID, content, nil, metadata)
+	messageID := stringValue(message.MessageId)
+	messageType := stringValue(message.MessageType)
+	if err := c.reactToMessage(context.Background(), messageID, messageType); err != nil {
+		logger.WarnCF("feishu", "Failed to add reaction for inbound message", map[string]any{
+			"chat_id":      chatID,
+			"message_id":   messageID,
+			"message_type": messageType,
+			"error":        err.Error(),
+		})
+	}
+
+	// Decouple event callback from agent processing: react first, then enqueue in background.
+	go c.HandleMessage(senderID, chatID, content, nil, metadata)
 	return nil
+}
+
+func (c *FeishuChannel) reactToMessage(ctx context.Context, messageID, messageType string) error {
+	if !shouldReactToFeishuMessage(messageID, messageType) {
+		return nil
+	}
+
+	req := larkim.NewCreateMessageReactionReqBuilder().
+		MessageId(messageID).
+		Body(larkim.NewCreateMessageReactionReqBodyBuilder().
+			ReactionType(larkim.NewEmojiBuilder().EmojiType(feishuAutoReactionEmojiType).Build()).
+			Build()).
+		Build()
+
+	resp, err := c.client.Im.V1.MessageReaction.Create(ctx, req)
+	if err != nil {
+		return fmt.Errorf("create message reaction failed: %w", err)
+	}
+	if !resp.Success() {
+		return fmt.Errorf("feishu reaction api error: code=%d msg=%s", resp.Code, resp.Msg)
+	}
+	return nil
+}
+
+func shouldReactToFeishuMessage(messageID, messageType string) bool {
+	return messageID != "" && messageType != "system"
 }
 
 func extractFeishuSenderID(sender *larkim.EventSender) string {
