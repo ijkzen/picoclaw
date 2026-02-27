@@ -77,46 +77,6 @@ body {
     ));
 }
 
-// View Transitions API - Circular Reveal Animation for Theme Toggle
-:root {
-  --theme-toggle-x: 50%;
-  --theme-toggle-y: 50%;
-}
-
-::view-transition-new(root) {
-  clip-path: circle(0% at var(--theme-toggle-x) var(--theme-toggle-y));
-  animation: circular-reveal 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-::view-transition-old(root) {
-  animation: circular-hide 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-::view-transition-image-pair(root) {
-  isolation: isolate;
-}
-
-@keyframes circular-reveal {
-  to {
-    clip-path: circle(150% at var(--theme-toggle-x) var(--theme-toggle-y));
-  }
-}
-
-@keyframes circular-hide {
-  to {
-    clip-path: circle(150% at var(--theme-toggle-x) var(--theme-toggle-y));
-  }
-}
-
-// Accessibility: Respect reduced motion preference
-@media (prefers-reduced-motion: reduce) {
-
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
-    animation-duration: 0.01s !important;
-  }
-}
-
 
 // Markdown content styles
 .markdown-content {
@@ -250,4 +210,10 @@ body {
       background: var(--mat-sys-surface-container-high);
     }
   }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }

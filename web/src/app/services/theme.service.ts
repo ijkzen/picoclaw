@@ -40,26 +40,37 @@ export class ThemeService {
     const x = event?.clientX ?? Math.round(window.innerWidth / 2);
     const y = event?.clientY ?? Math.round(window.innerHeight / 2);
 
-    // set CSS vars for circular reveal positioning
     const html = document.documentElement;
     html.style.setProperty('--theme-toggle-x', `${x}px`);
     html.style.setProperty('--theme-toggle-y', `${y}px`);
 
-    // Use View Transitions API when available
     if (typeof (document as any).startViewTransition === 'function') {
       const transition = (document as any).startViewTransition(() => {
-        // perform the actual theme toggle inside the transition
         this.toggleTheme();
       });
 
-      // wait for transition readiness if provided
-      try {
-        await (transition?.ready as Promise<void> | undefined);
-      } catch {
-        // ignore readiness errors and continue
-      }
+      // 手动触发动画，只作用于新视图
+      const endRadius = Math.sqrt(
+        Math.max(x, window.innerWidth - x) ** 2 + Math.max(y, window.innerHeight - y) ** 2
+      );
+      transition.ready
+        .then(() => {
+          document.documentElement.animate(
+            {
+              clipPath: [
+                `circle(0px at ${x}px ${y}px)`,
+                `circle(${endRadius}px at ${x}px ${y}px)`
+              ]
+            },
+            {
+              duration: 400,
+              easing: 'ease-in-out',
+              pseudoElement: '::view-transition-new(root)'
+            }
+          );
+        })
+        .catch(() => undefined);
     } else {
-      // Fallback when View Transitions API not available
       this.toggleTheme();
     }
   }
