@@ -1,8 +1,7 @@
 # PicoClaw Knowledge Base
 
 **Generated:** 2026-02-26
-**Commit:** 094d6591
-**Branch:** main
+| **Commit:** 094d6591
 
 ## OVERVIEW
 
