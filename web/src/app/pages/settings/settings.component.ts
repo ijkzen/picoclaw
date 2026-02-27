@@ -28,7 +28,7 @@ import { SettingsChannelItem, SettingsWebProviders } from './settings.types';
     SettingsHeartbeatTabComponent
   ],
   templateUrl: './settings.component.html',
-  host: { class: 'block' }
+  host: { style: 'display: block; height: 100%; min-height: 0;' }
 })
 export class SettingsComponent implements OnInit, OnDestroy {
   config = signal<Config | null>(null);

@@ -1,4 +1,4 @@
-<mat-sidenav-container class="h-full">
+<mat-sidenav-container class="h-full" style="height: 100%;">
   <mat-sidenav
     #drawer
     class="flex w-[280px] flex-col"
@@ -8,7 +8,7 @@
     [opened]="!isHandset()">
     <mat-toolbar class="flex items-center justify-center p-4">
       <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] text-xl font-bold text-white">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#0ea5e9] to-[#14b8a6] text-xl font-bold text-white">
           P
         </div>
         <span class="text-xl font-medium text-[var(--mat-sys-on-surface)]">PicoClaw</span>
@@ -39,7 +39,9 @@
     </mat-nav-list>
   </mat-sidenav>
 
-  <mat-sidenav-content class="flex h-full flex-col bg-[var(--mat-sys-surface-container)]">
+  <mat-sidenav-content
+    class="flex h-full flex-col bg-[var(--mat-sys-surface-container)]"
+    style="display: flex; height: 100%; flex-direction: column; background: var(--mat-sys-surface-container);">
     <mat-toolbar color="primary" class="sticky top-0 z-[1000] [box-shadow:var(--mat-sys-level2)]">
       @if (isHandset()) {
         <button type="button" mat-icon-button (click)="drawer.toggle()" aria-label="Toggle sidenav">
@@ -47,6 +49,7 @@
         </button>
       }
 
+      <span class="ml-2 text-sm font-semibold tracking-[0.08em] uppercase">{{ pageTitle() }}</span>
       <span class="flex-1"></span>
 
       <button mat-icon-button (click)="onToggleTheme($event)" matTooltip="Toggle theme">
@@ -54,7 +57,9 @@
       </button>
     </mat-toolbar>
 
-    <div class="flex flex-1 flex-col overflow-hidden bg-[var(--mat-sys-surface)]">
+    <div
+      class="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--mat-sys-surface)]"
+      style="display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; overflow: hidden; background: var(--mat-sys-surface);">
       <router-outlet></router-outlet>
     </div>
   </mat-sidenav-content>

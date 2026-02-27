@@ -1,4 +1,4 @@
-import { Component, signal, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { AfterViewChecked, ChangeDetectionStrategy, Component, ElementRef, ViewChild, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
@@ -6,8 +6,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatListModule } from '@angular/material/list';
-import { MatDividerModule } from '@angular/material/divider';
 import { ApiService } from '../../services/api.service';
 import { Message } from '../../models/config.model';
 
@@ -21,12 +19,11 @@ import { Message } from '../../models/config.model';
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatTooltipModule,
-    MatListModule,
-    MatDividerModule
+    MatTooltipModule
   ],
   templateUrl: './chat.component.html',
-  host: { class: 'block h-full' }
+  host: { style: 'display: block; height: 100%; min-height: 0;' },
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatComponent implements AfterViewChecked {
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
@@ -34,9 +31,9 @@ export class ChatComponent implements AfterViewChecked {
   messages = signal<Message[]>([]);
   inputMessage = signal('');
   isLoading = signal(false);
-  streamingMessage = signal('');
+  private lastScrollKey = '';
 
-  quickPrompts = [
+  readonly quickPrompts = [
     'What can you help me with?',
     'Explain quantum computing in simple terms',
     'Write a Python function to calculate Fibonacci',
@@ -46,7 +43,12 @@ export class ChatComponent implements AfterViewChecked {
   constructor(private apiService: ApiService) {}
 
   ngAfterViewChecked(): void {
-    this.scrollToBottom();
+    const message = this.messages().at(-1);
+    const scrollKey = message ? `${message.id}:${message.content.length}:${message.isStreaming ? '1' : '0'}` : 'empty';
+    if (scrollKey !== this.lastScrollKey) {
+      this.lastScrollKey = scrollKey;
+      this.scrollToBottom();
+    }
   }
 
   private scrollToBottom(): void {

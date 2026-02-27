@@ -1,57 +1,97 @@
-<div class="mx-auto flex h-full max-w-[800px] flex-col">
-  <div #messagesContainer class="flex-1 overflow-y-auto p-4">
-    @if (messages().length > 0) {
-      <mat-list class="p-0">
+<div
+  class="mx-auto flex h-full min-h-0 w-full max-w-[960px] flex-col"
+  style="display: flex; height: 100%; min-height: 0; width: 100%; max-width: 960px; margin: 0 auto; flex-direction: column;">
+  <div
+    #messagesContainer
+    class="min-h-0 flex-1 overflow-y-auto px-3 pb-6 pt-5 sm:px-6"
+    style="min-height: 0; flex: 1 1 auto; overflow-y: auto;">
+    @if (messages().length === 0) {
+      <section
+        class="mx-auto mt-8 flex max-w-[720px] flex-col gap-6 rounded-3xl border border-[var(--mat-sys-outline-variant)] bg-[var(--mat-sys-surface-container-low)] p-6 sm:p-8">
+        <header class="space-y-2">
+          <p class="text-sm font-medium tracking-[0.08em] uppercase opacity-75">PicoClaw Assistant</p>
+          <h1 class="text-2xl font-semibold leading-tight sm:text-3xl">Ask anything and iterate quickly</h1>
+          <p class="text-sm opacity-80 sm:text-base">
+            Use a quick prompt to start, or type your own request below.
+          </p>
+        </header>
+
+        <div class="grid gap-2 sm:grid-cols-2">
+          @for (prompt of quickPrompts; track prompt) {
+            <button
+              type="button"
+              mat-stroked-button
+              class="!h-auto !justify-start !rounded-2xl !border-[var(--mat-sys-outline-variant)] !px-4 !py-3 !text-left !text-sm !leading-5"
+              (click)="sendQuickMessage(prompt)">
+              {{ prompt }}
+            </button>
+          }
+        </div>
+      </section>
+    } @else {
+      <div class="mx-auto flex w-full max-w-[760px] flex-col gap-4 pb-2">
         @for (message of messages(); track message.id) {
-          <mat-list-item
-            [class]="message.role === 'user' ? '!h-auto min-h-[72px] py-4 bg-[var(--mat-sys-primary-container)]' : '!h-auto min-h-[72px] py-4'">
-            <mat-icon matListItemIcon>
-              {{ message.role === 'user' ? 'person' : 'smart_toy' }}
-            </mat-icon>
-            <div matListItemTitle class="mb-2 flex items-center justify-between">
-              <span>{{ message.role === 'user' ? 'You' : 'PicoClaw' }}</span>
-              <span class="text-xs opacity-60">{{ message.timestamp | date:'shortTime' }}</span>
+          <article class="flex gap-3" [class.justify-end]="message.role === 'user'">
+            <div class="flex max-w-[90%] gap-3 sm:max-w-[80%]" [class.flex-row-reverse]="message.role === 'user'">
+              <div
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--mat-sys-outline-variant)] bg-[var(--mat-sys-surface-container)]">
+                <mat-icon class="!text-[18px]">
+                  {{ message.role === 'user' ? 'person' : 'smart_toy' }}
+                </mat-icon>
+              </div>
+
+              <div class="min-w-0">
+                <div
+                  class="rounded-2xl border border-[var(--mat-sys-outline-variant)] p-3 shadow-sm"
+                  [class.bg-[var(--mat-sys-primary-container)]]="message.role === 'user'"
+                  [class.bg-[var(--mat-sys-surface-container-lowest)]]="message.role !== 'user'">
+                  <pre class="m-0 whitespace-pre-wrap break-words font-inherit text-sm leading-6">{{ message.content }}</pre>
+                  @if (message.isStreaming) {
+                    <span class="inline-block animate-pulse text-sm opacity-70">Generating...</span>
+                  }
+                </div>
+                <div class="mt-1 px-1 text-xs opacity-65" [class.text-right]="message.role === 'user'">
+                  {{ message.timestamp | date:'shortTime' }}
+                </div>
+              </div>
             </div>
-            <div matListItemLine>
-              <pre class="m-0 whitespace-pre-wrap break-words font-inherit text-sm">{{ message.content }}</pre>
-              @if (message.isStreaming) {
-                <span class="animate-pulse">|</span>
-              }
-            </div>
-          </mat-list-item>
-          <mat-divider></mat-divider>
+          </article>
         }
 
-        @if (isLoading() && !streamingMessage()) {
-          <mat-list-item class="text-[var(--mat-sys-on-surface-variant)]">
-            <mat-spinner matListItemIcon diameter="20"></mat-spinner>
-            <div matListItemTitle>Thinking...</div>
-          </mat-list-item>
+        @if (isLoading()) {
+          <div class="flex items-center gap-2 px-1 text-sm text-[var(--mat-sys-on-surface-variant)]">
+            <mat-spinner diameter="18"></mat-spinner>
+            <span>PicoClaw is thinking...</span>
+          </div>
         }
-      </mat-list>
+      </div>
     }
   </div>
 
-  <div class="shrink-0 bg-[var(--mat-sys-surface)]">
-    <mat-divider></mat-divider>
-    <div class="flex items-start gap-3 p-4">
-      <mat-form-field appearance="outline" class="flex-1">
+  <div
+    class="sticky bottom-0 z-10 shrink-0 border-t border-[var(--mat-sys-outline-variant)] bg-[color-mix(in_srgb,var(--mat-sys-surface)_92%,transparent)] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:px-6"
+    style="position: sticky; bottom: 0; z-index: 10; flex-shrink: 0; border-top: 1px solid var(--mat-sys-outline-variant); background: color-mix(in srgb, var(--mat-sys-surface) 92%, transparent);">
+    <div class="flex w-full items-end" style="width: calc(100% - 16px); margin: 0 8px 8px; gap: 12px;">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="flex-1 [&_.mat-mdc-form-field-subscript-wrapper]:!hidden">
         <mat-label>Type your message...</mat-label>
         <textarea
           matInput
-          [(ngModel)]="inputMessage"
+          [ngModel]="inputMessage()"
+          (ngModelChange)="inputMessage.set($event)"
           (keydown)="onKeydown($event)"
           cdkTextareaAutosize
           cdkAutosizeMinRows="1"
-          cdkAutosizeMaxRows="5">
-        </textarea>
+          cdkAutosizeMaxRows="5"></textarea>
       </mat-form-field>
 
       <button
+        type="button"
         mat-fab
+        class="shrink-0"
         color="primary"
         [disabled]="!inputMessage().trim() || isLoading()"
         (click)="sendMessage()"
+        aria-label="Send message"
         matTooltip="Send message (Enter)">
         @if (isLoading()) {
           <mat-spinner diameter="24"></mat-spinner>
