@@ -1,9 +1,6 @@
 // Angular Material Theming - @use must come first
 @use '@angular/material' as mat;
 
-// Import Tailwind CSS (after @use)
-@import "tailwindcss";
-
 // Define the theme object
 $web-theme: (
   color: (
