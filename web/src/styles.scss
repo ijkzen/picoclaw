@@ -1,10 +1,11 @@
 // Angular Material Theming - @use must come first
 @use '@angular/material' as mat;
 
+@import "tailwindcss";
+
 // Define the theme object
 $web-theme: (
-  color: (
-    theme-type: light,
+  color: (theme-type: light,
     primary: mat.$azure-palette,
     tertiary: mat.$blue-palette,
   ),
@@ -19,7 +20,8 @@ $web-theme: (
 @include mat.theme($web-theme);
 
 // Global styles
-html, body {
+html,
+body {
   height: 100%;
 }
 
@@ -49,8 +51,15 @@ body {
 
 // Animations
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .fade-in {
@@ -59,15 +68,13 @@ body {
 
 // Dark theme support
 .dark {
-  @include mat.theme((
-    color: (
-      theme-type: dark,
-      primary: mat.$azure-palette,
-      tertiary: mat.$blue-palette,
-    ),
-    typography: Roboto,
-    density: 0,
-  ));
+  @include mat.theme((color: (theme-type: dark,
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    ));
 }
 
 // View Transitions API - Circular Reveal Animation for Theme Toggle
@@ -103,6 +110,7 @@ body {
 
 // Accessibility: Respect reduced motion preference
 @media (prefers-reduced-motion: reduce) {
+
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 0.01s !important;

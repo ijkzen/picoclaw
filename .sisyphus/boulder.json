@@ -1,9 +1,10 @@
 {
-  "active_plan": "/Users/ijkzen/Projects/GO-Project/picoclaw/.sisyphus/plans/theme-toggle-circular-reveal.md",
-  "started_at": "2026-02-26T14:27:11.512Z",
+  "active_plan": "/Users/ijkzen/Projects/GO-Project/picoclaw/.sisyphus/plans/fix-chat-input-alignment.md",
+  "started_at": "2026-02-27T11:32:41.490Z",
   "session_ids": [
-    "ses_365a74818ffenjevgmkEqI1Kt0"
+    "ses_3612c967dffe0IcSsF0HVVQH0U"
   ],
-  "plan_name": "theme-toggle-circular-reveal",
-  "agent": "atlas"
+  "plan_name": "fix-chat-input-alignment",
+  "agent": "atlas",
+  "worktree_path": "/Users/ijkzen/Projects/GO-Project/picoclaw"
 }
