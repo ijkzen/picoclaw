@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewChecked, ChangeDetectionStrategy, Component, ElementRef, ViewChild, signal } from '@angular/core';
+import { AfterViewChecked, ChangeDetectionStrategy, Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,9 +7,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { NgxMkdComponent } from 'ngx-mkd';
 import { Message } from '../../models/config.model';
 import { ApiService } from '../../services/api.service';
-import { MarkdownService } from '../../services/markdown.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-chat',
@@ -22,7 +23,8 @@ import { MarkdownService } from '../../services/markdown.service';
     MatIconModule,
     MatProgressSpinnerModule,
     MatProgressBarModule,
-    MatTooltipModule
+    MatTooltipModule,
+    NgxMkdComponent
   ],
   templateUrl: './chat.component.html',
   host: { style: 'display: block; height: 100%; min-height: 0;' },
@@ -36,6 +38,8 @@ export class ChatComponent implements AfterViewChecked {
   isLoading = signal(false);
   private lastScrollKey = '';
 
+  private readonly themeService = inject(ThemeService);
+
   readonly quickPrompts = [
     'What can you help me with?',
     'Explain quantum computing in simple terms',
@@ -43,12 +47,11 @@ export class ChatComponent implements AfterViewChecked {
     'Help me debug my code'
   ];
 
-  constructor(
-    private apiService: ApiService,
-    private markdownService: MarkdownService
-  ) {}
+  constructor(private apiService: ApiService) {}
 
-  renderMarkdown(content: string): string { return this.markdownService.renderMarkdown(content); }
+  get theme() {
+    return this.themeService.isDarkMode() ? 'dark' : 'light';
+  }
 
   toggleRawContent(message: Message): void {
     message.showRawContent = !message.showRawContent;

@@ -9,9 +9,18 @@ export class ThemeService {
 
   // Highlight.js theme management
   private readonly HIGHLIGHT_LINK_ID = 'highlightjs-theme';
-  // Use highlight theme bundles emitted by Angular build (non-injected)
   private readonly HIGHLIGHT_LIGHT = '/highlight-light.css';
   private readonly HIGHLIGHT_DARK = '/highlight-dark.css';
+
+  // Markdown theme management
+  private readonly MARKDOWN_LINK_ID = 'markdown-theme-stylesheet';
+  private readonly MARKDOWN_LIGHT = '/markdown-light.css';
+  private readonly MARKDOWN_DARK = '/markdown-dark.css';
+
+  // highlight.js (ngx-mkd) theme management
+  private readonly HJLINK_LINK_ID = 'hljs-theme-stylesheet';
+  private readonly HJLINK_LIGHT = '/hljs-light.css';
+  private readonly HJLINK_DARK = '/hljs-dark.css';
 
   constructor() {
     this.loadTheme();
@@ -27,12 +36,17 @@ export class ThemeService {
     }
     this.applyTheme();
     this.updateHighlightJsTheme();
+    this.updateMarkdownTheme();
+    this.updateHljsTheme();
   }
 
   toggleTheme(): void {
     this.isDarkMode.update(current => !current);
     this.applyTheme();
     localStorage.setItem(this.THEME_KEY, this.isDarkMode() ? 'dark' : 'light');
+    this.updateHighlightJsTheme();
+    this.updateMarkdownTheme();
+    this.updateHljsTheme();
   }
 
   async toggleThemeWithTransition(event?: MouseEvent): Promise<void> {
@@ -80,6 +94,8 @@ export class ThemeService {
     this.applyTheme();
     localStorage.setItem(this.THEME_KEY, isDark ? 'dark' : 'light');
     this.updateHighlightJsTheme();
+    this.updateMarkdownTheme();
+    this.updateHljsTheme();
   }
 
   private applyTheme(): void {
@@ -93,11 +109,21 @@ export class ThemeService {
     }
     // keep highlight.js theme in sync with overall theme
     this.updateHighlightJsTheme();
+    this.updateMarkdownTheme();
+    this.updateHljsTheme();
   }
 
-  private updateHighlightJsTheme(): void {
-    const href = this.isDarkMode() ? this.HIGHLIGHT_DARK : this.HIGHLIGHT_LIGHT;
-    const id = this.HIGHLIGHT_LINK_ID;
+  private updateMarkdownTheme(): void {
+    const href = this.isDarkMode() ? this.MARKDOWN_DARK : this.MARKDOWN_LIGHT;
+    this.upsertStylesheetLink(this.MARKDOWN_LINK_ID, href);
+  }
+
+  private updateHljsTheme(): void {
+    const href = this.isDarkMode() ? this.HJLINK_DARK : this.HJLINK_LIGHT;
+    this.upsertStylesheetLink(this.HJLINK_LINK_ID, href);
+  }
+
+  private upsertStylesheetLink(id: string, href: string): void {
     let link = document.getElementById(id) as HTMLLinkElement | null;
 
     if (link) {
@@ -112,5 +138,10 @@ export class ThemeService {
     link.rel = 'stylesheet';
     link.href = href;
     document.head.appendChild(link);
+  }
+
+  private updateHighlightJsTheme(): void {
+    const href = this.isDarkMode() ? this.HIGHLIGHT_DARK : this.HIGHLIGHT_LIGHT;
+    this.upsertStylesheetLink(this.HIGHLIGHT_LINK_ID, href);
   }
 }

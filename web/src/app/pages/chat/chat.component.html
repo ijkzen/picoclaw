@@ -47,7 +47,9 @@
               <pre
                 class="m-0 whitespace-pre-wrap break-words font-inherit text-sm leading-6">{{ message.content }}</pre>
               } @else {
-              <div class="markdown-content text-sm leading-6" [innerHTML]="renderMarkdown(message.content)"></div>
+              <div class="markdown-content text-sm leading-6">
+                <lib-ngx-mkd [markdown]="message.content" [theme]="$any(theme)"></lib-ngx-mkd>
+              </div>
               }
 
               <!-- Streaming indicator -->

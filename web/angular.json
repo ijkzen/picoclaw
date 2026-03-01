@@ -31,6 +31,27 @@
             ],
             "styles": [
               "src/styles.scss",
+              "node_modules/katex/dist/katex.min.css",
+              {
+                "input": "node_modules/github-markdown-css/github-markdown-light.css",
+                "inject": false,
+                "bundleName": "markdown-light"
+              },
+              {
+                "input": "node_modules/github-markdown-css/github-markdown-dark.css",
+                "inject": false,
+                "bundleName": "markdown-dark"
+              },
+              {
+                "input": "node_modules/highlight.js/styles/github.css",
+                "inject": false,
+                "bundleName": "hljs-light"
+              },
+              {
+                "input": "node_modules/highlight.js/styles/github-dark.css",
+                "inject": false,
+                "bundleName": "hljs-dark"
+              },
               {
                 "input": "src/styles/highlight-light.scss",
                 "inject": false,
